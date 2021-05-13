@@ -6,7 +6,7 @@ use legion::*;
 use std::fs::File;
 use std::collections::HashMap;
 
-use super::space::Rect;
+use super::space::{Point, Rect};
 use super::draw::Draw;
 use super::game::Timestep;
 
@@ -50,7 +50,8 @@ struct Frame
 {
 
     src: usize,
-    time: i32
+    time: i32,
+    offset: Point
 
 }
 
@@ -164,6 +165,13 @@ impl SpriteSheet
     {
 
         return draw.get_src(self.texture, sheet.animations[self.current_animation][self.current_frame].src);
+
+    }
+
+    pub fn get_offset<'a>(&self, sheet: &'a Sheet) -> &'a Point
+    {
+
+        return &sheet.animations[self.current_animation][self.current_frame].offset;
 
     }
 

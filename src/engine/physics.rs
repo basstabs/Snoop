@@ -39,18 +39,6 @@ pub struct StaticBody
 
 }
 
-impl StaticBody
-{
-
-    pub fn new(x: f32, y: f32, width: f32, height: f32) -> StaticBody
-    {
-
-        return StaticBody { body: Rect { x, y, width, height } };
-
-    }
-
-}
-
 pub struct OneWayBody
 {
 

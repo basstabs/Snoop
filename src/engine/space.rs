@@ -71,7 +71,7 @@ impl Rect
 
         }
 
-        if r1.y + r1.width <= r2.y
+        if r1.y + r1.height <= r2.y
         {
 
             return false;
@@ -109,7 +109,7 @@ impl Rect
 
         }
 
-        if r1.y + r1.width <= r2.y
+        if r1.y + r1.height <= r2.y
         {
 
             return correction;
