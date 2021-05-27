@@ -8,7 +8,8 @@
 			(
 
 				src: 0,
-				time: 1000
+				time: 1000,
+				offset: ( x: -6.0, y: -4.0 )
 
 			)
 
@@ -18,7 +19,8 @@
 			(
 
 				src: 1,
-				time: 1000
+				time: 1000,
+				offset: ( x: -6.0, y: -4.0 )
 
 			)
 
@@ -28,49 +30,57 @@
 			(
 
 				src: 2,
-				time: 75
+				time: 75,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 3,
-				time: 75
+				time: 75,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 4,
-				time: 75
+				time: 75,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 5,
-				time: 75
+				time: 75,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 6,
-				time: 75
+				time: 75,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 7,
-				time: 75
+				time: 75,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 8,
-				time: 75
+				time: 75,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 9,
-				time: 75
+				time: 75,
+				offset: ( x: -6.0, y: -4.0 )
 
 			)
 
@@ -80,49 +90,57 @@
 			(
 
 				src: 10,
-				time: 125
+				time: 125,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 11,
-				time: 125
+				time: 125,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 12,
-				time: 125
+				time: 125,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 13,
-				time: 125
+				time: 125,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 14,
-				time: 125
+				time: 125,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 15,
-				time: 125
+				time: 125,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 16,
-				time: 125
+				time: 125,
+				offset: ( x: -6.0, y: -4.0 )
 
 			),
 			(
 
 				src: 17,
-				time: 125
+				time: 125,
+				offset: ( x: -6.0, y: -4.0 )
 
 			)
 
@@ -132,7 +150,8 @@
 			(
 
 				src: 18,
-				time: 1000
+				time: 1000,
+				offset: ( x: -6.0, y: -4.0 )
 
 			)
 
@@ -142,7 +161,8 @@
 			(
 
 				src: 19,
-				time: 1000
+				time: 1000,
+				offset: ( x: -6.0, y: -4.0 )
 
 			)
 
@@ -152,7 +172,8 @@
 			(
 
 				src: 20,
-				time: 1000
+				time: 1000,
+				offset: ( x: -6.0, y: -4.0 )
 
 			)
 
@@ -162,7 +183,8 @@
 			(
 
 				src: 21,
-				time: 1000
+				time: 1000,
+				offset: ( x: -6.0, y: -4.0 )
 
 			)
 
@@ -172,7 +194,8 @@
 			(
 
 				src: 22,
-				time: 1000
+				time: 1000,
+				offset: ( x: -6.0, y: -4.0 )
 
 			)
 

@@ -115,8 +115,6 @@ impl Sheets
 
         };  
 
-        return index;
-
     }
 
 }
@@ -197,6 +195,18 @@ impl SpriteSheet
         self.repeat = repeat;
 
         self.running = true;
+
+    }
+
+    pub fn run(&mut self, animation: usize, repeat: bool)
+    {
+
+        if animation != self.current_animation
+        {
+
+            self.play(animation, repeat);
+
+        }
 
     }
 

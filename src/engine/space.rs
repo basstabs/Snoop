@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-const FLOATING_POINT_ERROR: f32 = 0.0001;
+pub const FLOATING_POINT_ERROR: f32 = 0.0001;
 
 #[derive(Deserialize)]
 pub struct Point
@@ -50,28 +50,28 @@ impl Rect
     pub fn intersects(r1: &Rect, r2: &Rect) -> bool
     {
 
-        if r1.x >= r2.x + r2.width
+        if r1.x >= r2.right()
         {
 
             return false;
 
         }
 
-        if r1.x + r1.width <= r2.x
+        if r1.right() <= r2.x
         {
 
             return false;
 
         }
 
-        if r1.y >= r2.y + r2.height
+        if r1.y >= r2.bottom()
         {
 
             return false;
 
         }
 
-        if r1.y + r1.height <= r2.y
+        if r1.bottom() <= r2.y
         {
 
             return false;
@@ -88,28 +88,28 @@ impl Rect
 
         let mut correction = (0.0, 0.0);
 
-        if r1.x >= r2.x + r2.width
+        if r1.x >= r2.right()
         {
 
             return correction;
 
         }
 
-        if r1.x + r1.width <= r2.x
+        if r1.right() <= r2.x
         {
 
             return correction;
 
         }
 
-        if r1.y >= r2.y + r2.height
+        if r1.y >= r2.bottom()
         {
 
             return correction;
 
         }
 
-        if r1.y + r1.height <= r2.y
+        if r1.bottom() <= r2.y
         {
 
             return correction;
@@ -121,13 +121,13 @@ impl Rect
         if vx >= 0.0
         {
 
-            correction.0 = r2.x - r1.x - r1.width;
+            correction.0 = r2.x - r1.right();
 
         }
         else //Set the x position for a leftward-moving r1 to match the right edge of r2
         {
 
-            correction.0 = r2.x + r2.width - r1.x;
+            correction.0 = r2.right() - r1.x;
 
         }
 
@@ -135,13 +135,13 @@ impl Rect
         if vy >= 0.0
         {
 
-            correction.1 = r2.y - r1.y - r1.height;
+            correction.1 = r2.y - r1.bottom();
 
         }
         else //Set the y position for an upward moving r1 to match the bottom edge of r2
         {
 
-            correction.1 = r2.y + r2.height - r1.y;
+            correction.1 = r2.bottom() - r1.y;
 
         }
 

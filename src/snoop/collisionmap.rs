@@ -1,5 +1,6 @@
 use ron::de::from_reader;
 use serde::Deserialize;
+use parametrizer::Parametrizer;
 
 use legion::*;
 
@@ -18,10 +19,21 @@ struct Body
 }
 
 #[derive(Deserialize)]
+struct Platform
+{
+
+    body: Body,
+    x_param: String,
+    y_param: String
+
+}
+
+#[derive(Deserialize)]
 struct CollisionMap
 {
 
-    bodies: Vec<Body>
+    bodies: Vec<Body>,
+    platforms: Vec<Platform>
 
 }
 
@@ -56,6 +68,37 @@ pub fn load_collision(world: &mut World, file: &str, directory: &str)
                     world.push((
 
                             StaticBody { body: body.body },
+
+                    ));
+
+                }
+
+            }
+
+            for platform in m.platforms
+            {
+
+                let x_param = Parametrizer::new(&platform.x_param).unwrap();
+                let y_param = Parametrizer::new(&platform.y_param).unwrap();
+
+                if platform.body.oneway
+                {
+
+                    world.push((
+
+                            OneWayBody { body: platform.body.body },
+                            Kinematic::new(x_param, y_param)
+
+                    ));
+
+                }
+                else
+                {
+
+                    world.push((
+
+                            StaticBody { body: platform.body.body },
+                            Kinematic::new(x_param, y_param)
 
                     ));
 

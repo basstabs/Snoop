@@ -1,6 +1,8 @@
 use sfml::window::Event;
 use sfml::graphics::{Color, RenderTarget, RenderWindow};
 
+use super::input::Input;
+
 pub struct Timestep
 {
 
@@ -12,6 +14,8 @@ pub trait State
 {
 
     fn initialize(&mut self);
+
+    fn handle_input(&mut self, input: &Input);
 
     //Returns false if the state has stopped running
     //True normally
@@ -29,6 +33,7 @@ pub struct Game
 
     //Game data
     states: Vec<Box<dyn State>>,
+    input: Input,
 
     //Backend data
     window: RenderWindow
@@ -41,7 +46,7 @@ impl Game
     pub fn new(window: RenderWindow) -> Game
     {
 
-        return Game { states: Vec::new(), window: window };
+        return Game { states: Vec::new(), input: Input::new(), window: window };
 
     }
 
@@ -66,10 +71,29 @@ impl Game
             {
 
                 Event::Closed => { return true; },
+                Event::KeyPressed { code: k, .. } => 
+                {
+
+                    self.input.add(k);
+
+                },
+                Event::KeyReleased { code: k, .. } =>
+                {
+
+                    self.input.remove(k);
+
+                },
                 _ => {}
 
 
             };
+
+        }
+
+        for state in self.states.iter_mut().filter(|s| { return s.active(); })
+        {
+
+            state.handle_input(&self.input);
 
         }
 

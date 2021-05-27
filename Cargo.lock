@@ -348,9 +348,9 @@ checksum = "af8b08b04175473088b46763e51ee54da5f9a164bc162f615b91bc179dbf15a3"
 
 [[package]]
 name = "parametrizer"
-version = "1.1.2"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ad3a03d35c37f89eacbb73ed16c897cfd765d69b73e61d7c3749e248d3c6d29"
+checksum = "c9e3cd1ab4076684e757b50a5deffe268227bcf1a814353efa00998a4e775c1e"
 dependencies = [
  "num",
  "rand",

@@ -1,4 +1,5 @@
 use sfml::graphics::{Color, RenderTarget, RenderWindow};
+use sfml::window::Key;
 
 use legion::*;
 use legion::systems::Builder;
@@ -6,13 +7,18 @@ use legion::storage::ComponentTypeId;
 
 use super::engine::game::{State, Timestep};
 use super::engine::draw::{Draw, Stroke};
+use super::engine::input::Input;
 use super::engine::physics;
-use super::engine::physics::{DynamicBody, Gravity, HasGravity, Kinematic, OneWayBody, StaticBody, Velocity};
+use super::engine::physics::{DynamicBody, Gravity, HasGravity, InteractsWithOneWay, Kinematic, OneWayBody, StaticBody, Velocity};
 use super::engine::sprites;
 use sprites::{Sheets, SpriteSheet};
-use super::engine::space::{Point, Rect};
+use super::engine::space::Rect;
 
 mod collisionmap;
+
+mod character;
+
+use character::{Character, InputCommand};
 
 pub struct Snoop
 {
@@ -33,7 +39,7 @@ impl Snoop
         let mut world = World::default();
 
         let mut draw = Draw::new();
-        let mut sheets = Sheets::new();;
+        let mut sheets = Sheets::new();
 
         let timestep = (step as f32) / 1000.0;
 
@@ -41,18 +47,15 @@ impl Snoop
         (
 
             SpriteSheet::from_files(&mut draw, &mut sheets, "Character", "./assets/images/", "./assets/data/atlases/", "Character", "./assets/data/sheets/"),
+            Character::new(200.0, 8.0),
             HasGravity {},
+            InteractsWithOneWay {},
             Velocity::new(0.0, 0.0),
-            DynamicBody::new(10.0, 10.0, 54.0, 54.0)
+            DynamicBody::new(50.0, 50.0, 15.0, 50.0)
 
         ));
 
-        world.push(
-        (
-
-            StaticBody::new(0.0, 500.0, 500.0, 25.0),
-
-        ));
+        collisionmap::load_collision(&mut world, "test", "./assets/data/collision/");
 
         let mut resources = Resources::default();
         resources.insert(draw);
@@ -64,8 +67,7 @@ impl Snoop
      
         Snoop::schedule_early_systems(&mut schedule_builder);
         Snoop::schedule_physics_systems(&mut schedule_builder);
-
-        schedule_builder.add_system(sprites::update_spritesheets_system());
+        Snoop::schedule_render_systems(&mut schedule_builder);
 
         let schedule = schedule_builder.build();
 
@@ -76,6 +78,8 @@ impl Snoop
     fn schedule_early_systems(schedule: &mut Builder)
     {
 
+        schedule.add_system(character::character_run_system());
+        schedule.add_system(character::character_jump_system());
         schedule.add_system(physics::top_collision_system());
 
     }
@@ -83,12 +87,24 @@ impl Snoop
     fn schedule_physics_systems(schedule: &mut Builder)
     {
 
+        schedule.add_system(physics::kinematic_static_move_system());
+        schedule.add_system(physics::kinematic_oneway_move_system());
+
         schedule.add_system(physics::gravity_system());
 
         schedule.add_system(physics::velocity_system());
+        schedule.add_system(physics::facing_system());
 
         schedule.add_system(physics::static_collision_system());
         schedule.add_system(physics::oneway_collision_system());
+
+    }
+
+    fn schedule_render_systems(schedule: &mut Builder)
+    {
+
+        character::schedule_animation_systems(schedule);
+        schedule.add_system(sprites::update_spritesheets_system());
 
     }
 
@@ -180,6 +196,17 @@ impl State for Snoop
 
     }
 
+    fn handle_input(&mut self, input: &Input)
+    {
+
+        self.resources.remove::<InputCommand>();
+
+        let command = InputCommand { left: input.contains(Key::A), right: input.contains(Key::D), jump: input.contains(Key::SPACE) }; 
+
+        self.resources.insert(command);
+
+    }
+
     fn update(&mut self, timestep: i32) -> bool
     {
 
@@ -204,7 +231,24 @@ impl State for Snoop
             {
 
                 let rect = sheet.get_src(&draw, sheet.get_sheet(&sheets));
-                let sprite = draw.create_sprite(sheet.texture, rect, &Rect { x: body.x() + time * velocity.x, y: body.y() + time * velocity.y, width: rect.width, height: rect.height });
+                let offset = sheet.get_offset(sheet.get_sheet(&sheets));
+
+                let mut x = 0.0;
+
+                if body.left
+                {
+
+                    x = body.right() - offset.x + (time * velocity.x);
+
+                }
+                else
+                {
+
+                    x = body.x() + offset.x + time * velocity.x;
+
+                }
+
+                let sprite = draw.create_sprite(sheet.texture, rect, &Rect { x: x, y: body.y() + offset.y + time * velocity.y, width: rect.width, height: rect.height }, body.left);
 
                 window.draw(&sprite);
 

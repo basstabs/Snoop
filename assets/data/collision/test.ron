@@ -1,0 +1,140 @@
+(
+
+	bodies:
+	[
+
+		(
+
+			body:
+			(
+
+				x: 0,
+				y: 0,
+				width: 25,
+				height: 500
+
+			),
+			oneway: false
+
+		),
+		(
+
+			body:
+			(
+
+				x: 0,
+				y: 0,
+				width: 800,
+				height: 25
+
+			),
+			oneway: false
+
+		),
+		(
+
+			body:
+			(
+
+				x: 775,
+				y: 0,
+				width: 25,
+				height: 500
+
+			),
+			oneway: false
+
+		),
+		(
+
+			body:
+			(
+
+				x: 0,
+				y: 475,
+				width: 800,
+				height: 25
+
+			),
+			oneway: false
+
+		),
+		(
+
+			body:
+			(
+
+				x: 400,
+				y: 425,
+				width: 100,
+				height: 10,
+
+			),
+			oneway: true
+
+		),
+		(
+
+			body:
+			(
+
+				x: 400,
+				y: 350,
+				width: 100,
+				height: 10
+
+			),
+			oneway: true
+
+		)
+
+	],
+	platforms:
+	[
+
+		(
+
+			body:
+			(
+
+				body:
+				(
+
+					x: 400,
+					y: 300,
+					width: 100,
+					height: 10
+
+				),
+				oneway: true
+
+			),
+			x_param: "p[4]400+50*t>0|500-50*(t-2)>2",
+			y_param: "300"
+
+		),
+		(
+
+			body:
+			(
+
+				body:
+				(
+
+					x: 250,
+					y: 250,
+					width: 150,
+					height: 25
+
+				),
+				oneway: false
+
+			),
+			x_param: "p[6]250+100*t>0|450-50*(t-2)>2|350-50*(t-4)>4",
+			y_param: "p[6]250>0|250-50*(t-2)>2|150+50*(t-4)>4"
+
+		)
+
+	]	
+
+)

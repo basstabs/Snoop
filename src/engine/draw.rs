@@ -2,12 +2,10 @@ use sfml::graphics::{Color, RectangleShape, Shape, Sprite, Texture, Transformabl
 use sfml::system::Vector2f;
 use sfml::SfBox;
 
-use legion::*;
-
 use std::collections::HashMap;
 
 use super::space::Rect;
-use super::sprites::{Sheet, SpriteAtlas};
+use super::sprites::SpriteAtlas;
 
 pub struct Stroke
 {
@@ -100,7 +98,7 @@ impl Draw
     }
 
     //Ignores dest.x and dest.y
-    pub fn create_sprite(&self, id: usize, src: &Rect, dest: &Rect) -> Sprite
+    pub fn create_sprite(&self, id: usize, src: &Rect, dest: &Rect, flip: bool) -> Sprite
     {
 
         if src.width == 0.0
@@ -120,7 +118,7 @@ impl Draw
         let texture = &self.textures[id].0;
 
         let mut sprite = Sprite::with_texture_and_rect(texture, &sfml::graphics::Rect::new(src.x as i32, src.y as i32, src.width as i32, src.height as i32));
-        sprite.set_scale(Vector2f::new(dest.width / src.width, dest.height / src.height));
+        sprite.set_scale(Vector2f::new(if flip { -1.0 } else { 1.0 } * (dest.width / src.width), dest.height / src.height));
         sprite.set_position(Vector2f::new(dest.x, dest.y));
 
         return sprite;
