@@ -7,7 +7,7 @@ use legion::*;
 use std::fs::File;
 
 use super::super::engine::space::Rect;
-use super::super::engine::physics::{Kinematic, OneWayBody, StaticBody, Velocity};
+use super::super::engine::physics::{Kinematic, OneWayBody, StaticBody};
 
 #[derive(Deserialize)]
 struct Body

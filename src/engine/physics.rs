@@ -1,6 +1,6 @@
 use legion::*;
 use legion::world::SubWorld;
-use legion::systems::CommandBuffer;
+use legion::systems::{Builder, CommandBuffer};
 
 use parametrizer::Parametrizer;
 
@@ -51,6 +51,26 @@ pub struct OneWayBody
 
 pub struct InteractsWithOneWay {}
 
+pub struct ResetOneWayInteraction
+{
+
+    time: i32,
+    duration: i32
+
+}
+
+impl ResetOneWayInteraction
+{
+
+    pub fn new(duration: i32) -> ResetOneWayInteraction
+    {
+
+		return ResetOneWayInteraction { time: 0, duration: duration };
+
+    }
+
+}
+
 pub struct Kinematic
 {
 
@@ -88,15 +108,15 @@ impl Kinematic
     fn should_move_oneway(kinematic: &Rect, dynamic: &mut Rect) -> bool
     {
 
-	let mut above = dynamic.bottom() <= kinematic.y;
+		let mut above = dynamic.bottom() <= kinematic.y;
 
-	dynamic.y += 1.0;
+		dynamic.y += 1.0;
 
-	above = above && Rect::intersects(kinematic, dynamic);
+		above = above && Rect::intersects(kinematic, dynamic);
 
-	dynamic.y -= 1.0;
+		dynamic.y -= 1.0;
 
-	return above;	
+		return above;	
 
     }	
 
@@ -120,7 +140,8 @@ pub struct DynamicBody
 {
 
     pub body: Rect,
-    pub left: bool
+    pub left: bool,
+	temp_velocity: Velocity //Used to capture velocity added per frame from being moved by a moving platform. Necessary for accurate collisions
 
 }
 
@@ -130,7 +151,7 @@ impl DynamicBody
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> DynamicBody
     {
 
-        return DynamicBody { body: Rect { x, y, width, height }, left: false };
+        return DynamicBody { body: Rect { x, y, width, height }, left: false, temp_velocity: Velocity::new(0.0, 0.0) };
 
     }
 
@@ -189,8 +210,16 @@ impl TopCollision
 }
 
 #[system(for_each)]
+fn reset_temp_velocity(dynamic: &mut DynamicBody)
+{
+
+	dynamic.temp_velocity = Velocity::new(0.0, 0.0);
+
+}
+
+#[system(for_each)]
 #[write_component(DynamicBody)]
-pub fn kinematic_static_move(kinematic: &mut Kinematic, static_body: &mut StaticBody, world: &mut SubWorld, #[resource] time: &Timestep)
+fn kinematic_static_move(kinematic: &mut Kinematic, static_body: &mut StaticBody, world: &mut SubWorld, #[resource] time: &Timestep)
 {
 
     let old_x = static_body.body.x;
@@ -210,6 +239,7 @@ pub fn kinematic_static_move(kinematic: &mut Kinematic, static_body: &mut Static
         {
 
             body.body.translate(velocity);
+			body.temp_velocity.add(velocity);
 
         }
         else
@@ -236,7 +266,7 @@ pub fn kinematic_static_move(kinematic: &mut Kinematic, static_body: &mut Static
 #[system(for_each)]
 #[write_component(DynamicBody)]
 #[read_component(InteractsWithOneWay)]
-pub fn kinematic_oneway_move(kinematic: &mut Kinematic, oneway_body: &mut OneWayBody, world: &mut SubWorld, #[resource] time: &Timestep)
+fn kinematic_oneway_move(kinematic: &mut Kinematic, oneway_body: &mut OneWayBody, world: &mut SubWorld, #[resource] time: &Timestep)
 {
 
     let old_x = oneway_body.body.x;
@@ -256,6 +286,7 @@ pub fn kinematic_oneway_move(kinematic: &mut Kinematic, oneway_body: &mut OneWay
         {
 
             body.body.translate(velocity);
+			body.temp_velocity.add(velocity);
 
         }
         else
@@ -285,7 +316,7 @@ pub fn kinematic_oneway_move(kinematic: &mut Kinematic, oneway_body: &mut OneWay
 
 }
 #[system(for_each)]
-pub fn velocity(dynamic_body: &mut DynamicBody, velocity: &Velocity)
+fn velocity(dynamic_body: &mut DynamicBody, velocity: &Velocity)
 {
 
     dynamic_body.body.translate((velocity.x, velocity.y));
@@ -293,7 +324,7 @@ pub fn velocity(dynamic_body: &mut DynamicBody, velocity: &Velocity)
 }
 
 #[system(for_each)]
-pub fn facing(dynamic_body: &mut DynamicBody, velocity: &Velocity)
+fn facing(dynamic_body: &mut DynamicBody, velocity: &Velocity)
 {
 
     if velocity.x < -FLOATING_POINT_ERROR
@@ -312,7 +343,7 @@ pub fn facing(dynamic_body: &mut DynamicBody, velocity: &Velocity)
 }
 
 #[system(for_each)]
-pub fn gravity(velocity: &mut Velocity, _g: &HasGravity, #[resource] gravity: &Gravity)
+fn gravity(velocity: &mut Velocity, _g: &HasGravity, #[resource] gravity: &Gravity)
 {
 
     velocity.y = (velocity.y + gravity.force).min(gravity.max);
@@ -320,7 +351,23 @@ pub fn gravity(velocity: &mut Velocity, _g: &HasGravity, #[resource] gravity: &G
 }
 
 #[system(for_each)]
-pub fn top_collision(_top: &TopCollision, cmd: &mut CommandBuffer, entity: &Entity)
+fn reset_oneway(reset: &mut ResetOneWayInteraction, cmd: &mut CommandBuffer, entity: &Entity, #[resource] time: &Timestep)
+{
+
+    reset.time += time.step;
+
+    if reset.time >= reset.duration
+    {
+
+		cmd.remove_component::<ResetOneWayInteraction>(*entity);
+		cmd.add_component(*entity, InteractsWithOneWay {});
+
+    }
+
+}
+
+#[system(for_each)]
+fn top_collision(_top: &TopCollision, cmd: &mut CommandBuffer, entity: &Entity)
 {
 
     TopCollision::remove(entity, cmd);
@@ -329,25 +376,30 @@ pub fn top_collision(_top: &TopCollision, cmd: &mut CommandBuffer, entity: &Enti
 
 #[system(for_each)]
 #[read_component(StaticBody)]
-pub fn static_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, world: &mut SubWorld, cmd: &mut CommandBuffer, entity: &Entity)
+fn static_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, world: &mut SubWorld, cmd: &mut CommandBuffer, entity: &Entity)
 {
 
     let mut query = <&StaticBody>::query();
 
     let mut top = false;
 
+	let mut collision_velocity = (velocity.x + dynamic_body.temp_velocity.x, velocity.y); //Currently unclear why adding temp_velocity.y breaks everything, but it does. Will revisit if necessary
+
     for body in query.iter(world)
     {
 
-        let correction = Rect::collides(&dynamic_body.body, &body.body, (velocity.x, velocity.y));  
+        let correction = Rect::collides(&dynamic_body.body, &body.body, collision_velocity);  
 
         dynamic_body.body.translate(correction);
         velocity.add(correction);
+		collision_velocity.0 += correction.0;
+		collision_velocity.1 += correction.1;
 
         if correction.1 != 0.0
         {
 
             velocity.y = 0.0;
+			collision_velocity.1 = 0.0;
 
         }
 
@@ -371,23 +423,26 @@ pub fn static_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity,
 
 #[system(for_each)]
 #[read_component(OneWayBody)]
-pub fn oneway_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, _interacts: &InteractsWithOneWay, world: &mut SubWorld, cmd: &mut CommandBuffer, entity: &Entity)
+fn oneway_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, _interacts: &InteractsWithOneWay, world: &mut SubWorld, cmd: &mut CommandBuffer, entity: &Entity)
 {
 
     let mut query = <&OneWayBody>::query();
 
     let mut top = false;
 
+	let mut collision_velocity = (velocity.x + dynamic_body.temp_velocity.x, velocity.y + dynamic_body.temp_velocity.y);
+
     for body in query.iter(world)
     {
 
-        let correction = Rect::collides(&dynamic_body.body, &body.body, (velocity.x, velocity.y));
+        let correction = Rect::collides(&dynamic_body.body, &body.body, collision_velocity);
 
-        if correction.1 < 0.0 && dynamic_body.body.bottom() - velocity.y <= body.body.y
+        if correction.1 < 0.0 && dynamic_body.body.bottom() - collision_velocity.1 <= body.body.y
         {
 
             dynamic_body.body.y += correction.1;
             velocity.y = 0.0;
+			collision_velocity.1 = 0.0;
 
             top = true;
 
@@ -401,5 +456,30 @@ pub fn oneway_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity,
         TopCollision::add(entity, cmd);
 
     }
+
+}
+
+pub fn schedule_early_systems(schedule: &mut Builder)
+{
+
+	schedule.add_system(reset_temp_velocity_system());
+	schedule.add_system(reset_oneway_system());
+	schedule.add_system(top_collision_system());
+
+}
+
+pub fn schedule_physics_systems(schedule: &mut Builder)
+{
+
+	schedule.add_system(kinematic_static_move_system());
+    schedule.add_system(kinematic_oneway_move_system());
+
+    schedule.add_system(gravity_system());
+
+    schedule.add_system(velocity_system());
+    schedule.add_system(facing_system());
+
+    schedule.add_system(static_collision_system());
+    schedule.add_system(oneway_collision_system());
 
 }

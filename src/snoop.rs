@@ -18,7 +18,7 @@ mod collisionmap;
 
 mod character;
 
-use character::{Character, InputCommand};
+use character::{Character, CharacterNormal, InputCommand};
 
 pub struct Snoop
 {
@@ -47,7 +47,8 @@ impl Snoop
         (
 
             SpriteSheet::from_files(&mut draw, &mut sheets, "Character", "./assets/images/", "./assets/data/atlases/", "Character", "./assets/data/sheets/"),
-            Character::new(200.0, 8.0),
+            Character::new(200.0, 8.0, 50.0),
+			CharacterNormal {},
             HasGravity {},
             InteractsWithOneWay {},
             Velocity::new(0.0, 0.0),
@@ -78,25 +79,16 @@ impl Snoop
     fn schedule_early_systems(schedule: &mut Builder)
     {
 
-        schedule.add_system(character::character_run_system());
-        schedule.add_system(character::character_jump_system());
-        schedule.add_system(physics::top_collision_system());
+		character::schedule_early_systems(schedule);
+
+		physics::schedule_early_systems(schedule);
 
     }
 
     fn schedule_physics_systems(schedule: &mut Builder)
     {
 
-        schedule.add_system(physics::kinematic_static_move_system());
-        schedule.add_system(physics::kinematic_oneway_move_system());
-
-        schedule.add_system(physics::gravity_system());
-
-        schedule.add_system(physics::velocity_system());
-        schedule.add_system(physics::facing_system());
-
-        schedule.add_system(physics::static_collision_system());
-        schedule.add_system(physics::oneway_collision_system());
+		physics::schedule_physics_systems(schedule);
 
     }
 
@@ -104,6 +96,7 @@ impl Snoop
     {
 
         character::schedule_animation_systems(schedule);
+
         schedule.add_system(sprites::update_spritesheets_system());
 
     }
@@ -115,7 +108,7 @@ impl Snoop
 
         let outline = Color::rgba(255, 255, 255, 200);
 
-        let mut static_query = <(&StaticBody)>::query().filter(component::<Kinematic>() | !component::<Kinematic>());
+        let mut static_query = <&StaticBody>::query().filter(component::<Kinematic>() | !component::<Kinematic>());
         for chunk in static_query.iter_chunks(&mut self.world)
         {
 
@@ -138,7 +131,7 @@ impl Snoop
 
         }
 
-        let mut oneway_query = <(&OneWayBody)>::query().filter(component::<Kinematic>() | !component::<Kinematic>());
+        let mut oneway_query = <&OneWayBody>::query().filter(component::<Kinematic>() | !component::<Kinematic>());
         for chunk in oneway_query.iter_chunks(&mut self.world)
         {
 
@@ -201,7 +194,7 @@ impl State for Snoop
 
         self.resources.remove::<InputCommand>();
 
-        let command = InputCommand { left: input.contains(Key::A), right: input.contains(Key::D), jump: input.contains(Key::SPACE) }; 
+        let command = InputCommand { left: input.contains(Key::A), right: input.contains(Key::D), up: input.contains(Key::W), down: input.contains(Key::S), jump: input.contains(Key::SPACE) }; 
 
         self.resources.insert(command);
 
@@ -233,7 +226,7 @@ impl State for Snoop
                 let rect = sheet.get_src(&draw, sheet.get_sheet(&sheets));
                 let offset = sheet.get_offset(sheet.get_sheet(&sheets));
 
-                let mut x = 0.0;
+                let x;
 
                 if body.left
                 {
