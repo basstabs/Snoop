@@ -178,6 +178,17 @@ impl DynamicBody
 
 }
 
+pub struct RequestSizeChange
+{
+
+	pub width: f32,
+	pub height: f32
+
+}
+
+pub struct RequestSizeChangeSuccess {}
+pub struct RequestSizeChangeFailure {}
+
 pub struct TopCollision {}
 
 pub struct Gravity
@@ -459,13 +470,73 @@ fn oneway_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, _in
 
 }
 
+#[system(for_each)]
+#[read_component(StaticBody)]
+#[read_component(OneWayBody)]
+fn request_size_change(dynamic_body: &mut DynamicBody, request: &RequestSizeChange, world: &mut SubWorld, cmd: &mut CommandBuffer, entity: &Entity)
+{
+
+	let new_rect = Rect { x: dynamic_body.body.x, y: dynamic_body.body.y + (dynamic_body.body.height - request.height), width: request.width, height: request.height };
+
+	let mut allowed = true;
+
+	let mut query = <&StaticBody>::query();
+
+	for body in query.iter(world)
+	{
+
+		if Rect::intersects(&new_rect, &body.body)
+		{
+
+			allowed = false;
+			break;
+
+		}
+
+	}
+
+	if allowed
+	{
+
+		dynamic_body.body = Rect { x: new_rect.x, y: new_rect.y, width: new_rect.width, height: new_rect.height };
+
+		cmd.add_component(*entity, RequestSizeChangeSuccess {});
+
+	}
+	else
+	{
+
+		cmd.add_component(*entity, RequestSizeChangeFailure {});
+
+	}
+
+	cmd.remove_component::<RequestSizeChange>(*entity);
+
+}
+
+#[system(for_each)]
+fn resize_failure(_fail: &RequestSizeChangeFailure, cmd: &mut CommandBuffer, entity: &Entity)
+{
+
+	cmd.remove_component::<RequestSizeChangeFailure>(*entity);
+
+}
+
+#[system(for_each)]
+fn resize_success(_success: &RequestSizeChangeSuccess, cmd: &mut CommandBuffer, entity: &Entity)
+{
+
+	cmd.remove_component::<RequestSizeChangeSuccess>(*entity);
+
+}
+
 pub fn schedule_early_systems(schedule: &mut Builder)
 {
 
 	schedule.add_system(reset_temp_velocity_system());
 	schedule.add_system(reset_oneway_system());
 	schedule.add_system(top_collision_system());
-
+	
 }
 
 pub fn schedule_physics_systems(schedule: &mut Builder)
@@ -482,4 +553,23 @@ pub fn schedule_physics_systems(schedule: &mut Builder)
     schedule.add_system(static_collision_system());
     schedule.add_system(oneway_collision_system());
 
+	schedule.add_system(request_size_change_system());
+
 }
+
+pub fn schedule_cleanup_systems(schedule: &mut Builder)
+{
+
+	schedule_request_systems(schedule);
+
+}
+
+fn schedule_request_systems(schedule: &mut Builder)
+{
+
+	schedule.add_system(resize_failure_system());
+	schedule.add_system(resize_success_system());
+
+}
+
+

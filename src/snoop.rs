@@ -18,7 +18,7 @@ mod collisionmap;
 
 mod character;
 
-use character::{Character, CharacterNormal, InputCommand};
+use character::{Character, InputCommand};
 
 pub struct Snoop
 {
@@ -48,7 +48,6 @@ impl Snoop
 
             SpriteSheet::from_files(&mut draw, &mut sheets, "Character", "./assets/images/", "./assets/data/atlases/", "Character", "./assets/data/sheets/"),
             Character::new(200.0, 8.0, 50.0),
-			CharacterNormal {},
             HasGravity {},
             InteractsWithOneWay {},
             Velocity::new(0.0, 0.0),
@@ -69,6 +68,7 @@ impl Snoop
         Snoop::schedule_early_systems(&mut schedule_builder);
         Snoop::schedule_physics_systems(&mut schedule_builder);
         Snoop::schedule_render_systems(&mut schedule_builder);
+		Snoop::schedule_cleanup_systems(&mut schedule_builder);
 
         let schedule = schedule_builder.build();
 
@@ -100,6 +100,13 @@ impl Snoop
         schedule.add_system(sprites::update_spritesheets_system());
 
     }
+
+	fn schedule_cleanup_systems(schedule: &mut Builder)
+	{
+
+		physics::schedule_cleanup_systems(schedule);
+
+	}
 
     fn debug_render(&mut self, window: &mut RenderWindow, time: f32)
     {
