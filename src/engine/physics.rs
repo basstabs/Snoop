@@ -141,6 +141,7 @@ pub struct DynamicBody
 
     pub body: Rect,
     pub left: bool,
+	pub top_collision: i32,
 	temp_velocity: Velocity //Used to capture velocity added per frame from being moved by a moving platform. Necessary for accurate collisions
 
 }
@@ -151,7 +152,7 @@ impl DynamicBody
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> DynamicBody
     {
 
-        return DynamicBody { body: Rect { x, y, width, height }, left: false, temp_velocity: Velocity::new(0.0, 0.0) };
+        return DynamicBody { body: Rect { x, y, width, height }, left: false, top_collision: 1, temp_velocity: Velocity::new(0.0, 0.0) };
 
     }
 
@@ -189,8 +190,6 @@ pub struct RequestSizeChange
 pub struct RequestSizeChangeSuccess {}
 pub struct RequestSizeChangeFailure {}
 
-pub struct TopCollision {}
-
 pub struct Gravity
 {
 
@@ -200,25 +199,6 @@ pub struct Gravity
 }
 
 pub struct HasGravity {}
-
-impl TopCollision
-{
-
-    fn add(entity: &Entity, cmd: &mut CommandBuffer)
-    {
-
-        cmd.add_component(*entity, TopCollision {});
-
-    }
-
-    fn remove(entity: &Entity, cmd: &mut CommandBuffer)
-    {
-
-        cmd.remove_component::<TopCollision>(*entity);
-
-    }
-
-}
 
 #[system(for_each)]
 fn reset_temp_velocity(dynamic: &mut DynamicBody)
@@ -378,16 +358,16 @@ fn reset_oneway(reset: &mut ResetOneWayInteraction, cmd: &mut CommandBuffer, ent
 }
 
 #[system(for_each)]
-fn top_collision(_top: &TopCollision, cmd: &mut CommandBuffer, entity: &Entity)
+fn top_collision(body: &mut DynamicBody, #[resource] time: &Timestep)
 {
 
-    TopCollision::remove(entity, cmd);
+    body.top_collision += time.step;
 
 }
 
 #[system(for_each)]
 #[read_component(StaticBody)]
-fn static_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, world: &mut SubWorld, cmd: &mut CommandBuffer, entity: &Entity)
+fn static_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, world: &mut SubWorld)
 {
 
     let mut query = <&StaticBody>::query();
@@ -426,7 +406,7 @@ fn static_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, wor
     if top
     {
 
-        TopCollision::add(entity, cmd);
+        dynamic_body.top_collision = 0;
 
     }
 
@@ -434,7 +414,7 @@ fn static_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, wor
 
 #[system(for_each)]
 #[read_component(OneWayBody)]
-fn oneway_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, _interacts: &InteractsWithOneWay, world: &mut SubWorld, cmd: &mut CommandBuffer, entity: &Entity)
+fn oneway_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, _interacts: &InteractsWithOneWay, world: &mut SubWorld)
 {
 
     let mut query = <&OneWayBody>::query();
@@ -464,7 +444,7 @@ fn oneway_collision(dynamic_body: &mut DynamicBody, velocity: &mut Velocity, _in
     if top
     {
 
-        TopCollision::add(entity, cmd);
+        dynamic_body.top_collision = 0;
 
     }
 
