@@ -11,4 +11,10 @@ enum Material
 struct Lock
 {
 
+	maze: Vec<bool>;
+
+}
+
+impl Lock
+{
 }

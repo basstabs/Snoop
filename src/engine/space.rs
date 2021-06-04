@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 pub const FLOATING_POINT_ERROR: f32 = 0.0001;
 
-#[derive(Clone, Copy, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
 pub struct Point
 {
 
@@ -16,10 +16,67 @@ pub struct Point
 impl Point
 {
 
-	pub fn dot(self, other: Point) -> f32
+	pub fn dot(&self, other: Point) -> f32
 	{
 
 		return self.x * other.x + self.y * other.y;
+
+	}
+
+	pub fn scale(&self, s: f32) -> Point
+	{
+
+		return Point { x: self.x * s, y: self.y * s };
+
+	}
+
+	//Assumes the angle from lower to upper is less than pi. Swap lower and upper and negate it or larger angles
+	pub fn ray_between(&self, lower: &Point, upper: &Point) -> bool
+	{
+
+		//Dot product of upper rotated ccw by pi/2
+		let upper_component = self.y * upper.x - self.x * upper.y;
+
+		if upper_component > FLOATING_POINT_ERROR
+		{
+
+			return false;
+
+		}
+
+		//Dot product of lower rotated cw by pi/2
+		let lower_component = self.x * lower.y - self.y * lower.x;
+
+		if lower_component > FLOATING_POINT_ERROR
+		{
+
+			return false;
+
+		}
+
+		return true;
+
+	}
+
+	//Works so long as all represented angles are between from and from+pi
+	pub fn sort_from_angle(rays: &mut Vec<Point>, from: Point)
+	{
+
+		rays.sort_unstable_by(|a, b|
+		{
+
+			//We want to order by angle from lower, which is the same as reverse ordering by normalized projections along lower
+			//We do some algebra to avoid computing square roots for the normalization, i.e. a dot L/|a|>b dot L/|b| if and only if
+			// a dot L*|a dot L|*|b|^2 > b dot L * |b dot L| * |a|^2
+			let a_dot_f = from.dot(*a);
+			let lhs = a_dot_f.abs() * a_dot_f * (b.x * b.x + b.y * b.y);
+
+			let b_dot_f = from.dot(*b);
+			let rhs = b_dot_f.abs() * b_dot_f * (a.x * a.x + a.y * a.y);
+
+			return rhs.partial_cmp(&lhs).unwrap();
+
+		});
 
 	}
 
@@ -56,8 +113,8 @@ impl Sub for Point
 pub struct Segment
 {
 
-	start: Point,
-	end: Point
+	pub start: Point,
+	pub end: Point
 
 }
 
@@ -93,7 +150,7 @@ impl Segment
 		let run = self.end.x - self.start.x;
 
 		let denominator = rise * ray.x - run * ray.y;
-		if denominator == 0.0 //The ray and the segment are parallel, so there is no intersection to find
+		if denominator.abs() < FLOATING_POINT_ERROR //The ray and the segment are parallel, so there is no intersection to find
 		{
 
 			return None;
@@ -101,14 +158,14 @@ impl Segment
 		}
 
 		let segment_param = (location.y * ray.x + self.start.x * ray.y - location.x * ray.y - self.start.y * ray.x) / denominator;
-		if segment_param < 0.0 || segment_param > 1.0 //The lines intersect outside the segment, so there is no intersection
+		if segment_param < -FLOATING_POINT_ERROR || segment_param > 1.0 + FLOATING_POINT_ERROR //The lines intersect outside the segment, so there is no intersection
 		{
 
 			return None;
 
 		}
 
-		let mut ray_param = 0.0;
+		let ray_param;
 		if ray.x == 0.0
 		{
 
@@ -122,7 +179,7 @@ impl Segment
 
 		}
 
-		if ray_param < 0.0 //The opposite of the ray intersects the segment, not the ray itself
+		if ray_param < -FLOATING_POINT_ERROR //The opposite of the ray intersects the segment, not the ray itself
 		{
 
 			return None;
@@ -305,6 +362,7 @@ impl Rect
 
 }
 
+#[derive(Debug)]
 pub struct Triangle
 {
 
@@ -314,6 +372,13 @@ pub struct Triangle
 
 impl Triangle
 {
+
+	pub fn new(a: Point, b: Point, c: Point) -> Triangle
+	{
+
+		return Triangle { vertices: [a, b, c] };
+
+	}
 
 	fn to_polygon(&self) -> Polygon
 	{
@@ -440,6 +505,42 @@ mod tests
 {
 
 	use super::*;
+
+	#[test]
+	fn angle_sort()
+	{
+
+		let mut rays = vec![Point { x: 1.0, y: 1.0 }, Point { x: 0.0, y: 1.0 }, Point { x: 2.0, y: 4.0 }, Point { x: -1.0, y: 1.0 }, Point { x: 1.0, y: 0.2 } ];
+		Point::sort_from_angle(&mut rays, Point { x: 1.0, y: 0.0 });
+
+		assert_eq!(rays, vec![Point { x: 1.0, y: 0.2 }, Point { x: 1.0, y: 1.0 }, Point { x: 2.0, y: 4.0 }, Point { x: 0.0, y: 1.0 }, Point { x: -1.0, y: 1.0 }]);
+
+	}
+
+	#[test]
+	fn ray_between()
+	{
+
+		let ray1 = Point { x: 2.5, y: 0.0 };
+		let ray2 = Point { x: 0.0, y: 1.0 };
+		let ray3 = Point { x: -1.0, y: 2.0 };
+		let ray4 = Point { x: -1.0, y: -1.1 };
+		let ray5 = Point { x: 3.7, y: -2.0 };
+		let ray6 = Point { x: -2.0, y: 0.0 };
+		let ray7 = Point { x: 0.0, y: -30.0 };
+		let ray8 = Point { x: 10.0, y: 1.0 };
+
+		assert!(ray8.ray_between(&ray1, &ray2));
+		assert!(ray6.ray_between(&ray3, &ray4));
+		assert!(ray5.ray_between(&ray7, &ray1));
+		assert!(ray4.ray_between(&ray3, &ray5));
+
+		assert!(!ray3.ray_between(&ray1, &ray2));
+		assert!(!ray1.ray_between(&ray3, &ray4));
+		assert!(!ray2.ray_between(&ray7, &ray1));
+		assert!(!ray8.ray_between(&ray3, &ray5));
+
+	}
 
 	#[test]
 	fn rectangle_intersection()

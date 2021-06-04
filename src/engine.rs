@@ -6,6 +6,7 @@ pub mod input;
 //Simulation modules
 pub mod space;
 pub mod physics;
+pub mod alarm;
 
 //Render modules
 pub mod sprites;

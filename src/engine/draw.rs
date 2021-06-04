@@ -1,10 +1,10 @@
-use sfml::graphics::{Color, RectangleShape, Shape, Sprite, Texture, Transformable};
+use sfml::graphics::{Color, ConvexShape, RectangleShape, Shape, Sprite, Texture, Transformable};
 use sfml::system::Vector2f;
 use sfml::SfBox;
 
 use std::collections::HashMap;
 
-use super::space::Rect;
+use super::space::{Rect, Triangle};
 use super::sprites::SpriteAtlas;
 
 pub struct Stroke
@@ -125,7 +125,7 @@ impl Draw
 
     }
 
-    pub fn create_rect(&self, stroke: Stroke, r: &Rect) -> RectangleShape
+    pub fn create_rect(&self, stroke: &Stroke, r: &Rect) -> RectangleShape
     {
 
         let mut rect = RectangleShape::new();
@@ -139,5 +139,25 @@ impl Draw
         return rect;
 
     }
+
+	pub fn create_triangle(&self, stroke: &Stroke, t: &Triangle) -> ConvexShape
+	{
+
+		let mut triangle = ConvexShape::new(3);
+
+		for i in 0..3
+		{
+
+			triangle.set_point(i, Vector2f::new(t.vertices[i as usize].x, t.vertices[i as usize].y));
+
+		}
+
+		triangle.set_outline_thickness(stroke.thickness);
+		triangle.set_outline_color(stroke.color);
+		triangle.set_fill_color(stroke.fill);
+
+		return triangle;
+
+	}
 
 }

@@ -5,6 +5,8 @@ use legion::*;
 use legion::systems::Builder;
 use legion::storage::ComponentTypeId;
 
+use super::engine::alarm;
+use super::engine::alarm::{Cone, Observer, Walls};
 use super::engine::game::{State, Timestep};
 use super::engine::draw::{Draw, Stroke};
 use super::engine::input::Input;
@@ -12,13 +14,13 @@ use super::engine::physics;
 use super::engine::physics::{DynamicBody, Gravity, HasGravity, InteractsWithOneWay, Kinematic, OneWayBody, StaticBody, Velocity};
 use super::engine::sprites;
 use sprites::{Sheets, SpriteSheet};
-use super::engine::space::Rect;
+use super::engine::space::{Point, Rect};
 
 mod collisionmap;
 
-mod character;
+mod player;
 
-use character::{Character, InputCommand};
+use player::{Player, InputCommand};
 
 pub struct Snoop
 {
@@ -47,13 +49,21 @@ impl Snoop
         (
 
             SpriteSheet::from_files(&mut draw, &mut sheets, "Character", "./assets/images/", "./assets/data/atlases/", "Character", "./assets/data/sheets/"),
-            Character::new(200.0, 8.0, 50.0),
+            Player::new(200.0, 8.0, 50.0),
             HasGravity {},
             InteractsWithOneWay {},
             Velocity::new(0.0, 0.0),
             DynamicBody::new(50.0, 50.0, 15.0, 50.0)
 
         ));
+
+		world.push(
+		(
+
+			Observer::new(Point { x: 200.0, y: 50.0 }, Point { x: 0.0, y: 0.0 }, Point { x: -1.0, y: 1.0 }, Point { x: 1.0, y: 1.0} ),
+			Cone { field: Vec::new() }
+
+		));
 
         collisionmap::load_collision(&mut world, "test", "./assets/data/collision/");
 
@@ -62,6 +72,7 @@ impl Snoop
         resources.insert(sheets);
         resources.insert(Timestep { step });
         resources.insert(Gravity { force: 20.0 * timestep, max: 1000.0 * timestep});
+		resources.insert(Walls::new());
 
         let mut schedule_builder = Schedule::builder();
      
@@ -79,7 +90,7 @@ impl Snoop
     fn schedule_early_systems(schedule: &mut Builder)
     {
 
-		character::schedule_early_systems(schedule);
+		player::schedule_early_systems(schedule);
 
 		physics::schedule_early_systems(schedule);
 
@@ -89,13 +100,15 @@ impl Snoop
     {
 
 		physics::schedule_physics_systems(schedule);
+		
+		alarm::schedule_alarm_systems(schedule);
 
     }
 
     fn schedule_render_systems(schedule: &mut Builder)
     {
 
-        character::schedule_animation_systems(schedule);
+        player::schedule_animation_systems(schedule);
 
         schedule.add_system(sprites::update_spritesheets_system());
 
@@ -131,7 +144,7 @@ impl Snoop
             for body in chunk
             { 
 
-                let rect = draw.create_rect(Stroke::new(outline, fill, 1.0), &body.body);
+                let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &body.body);
                 window.draw(&rect);
 
             }
@@ -154,7 +167,7 @@ impl Snoop
             for body in chunk
             { 
 
-                let rect = draw.create_rect(Stroke::new(outline, fill, 1.0), &body.body);
+                let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &body.body);
                 window.draw(&rect);
 
             }
@@ -177,7 +190,7 @@ impl Snoop
             for (body, velocity) in chunk
             {
 
-                let rect = draw.create_rect(Stroke::new(outline, fill, 1.0), &Rect { x: body.x() + time * velocity.x, y: body.y() + time * velocity.y, width: body.body.width, height: body.body.height });
+                let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &Rect { x: body.x() + time * velocity.x, y: body.y() + time * velocity.y, width: body.body.width, height: body.body.height });
                 window.draw(&rect);
 
             }
@@ -207,7 +220,7 @@ impl State for Snoop
 
     }
 
-    fn update(&mut self, timestep: i32) -> bool
+    fn update(&mut self, _timestep: i32) -> bool
     {
 
         self.schedule.execute(&mut self.world, &mut self.resources);
@@ -226,8 +239,8 @@ impl State for Snoop
             let draw = self.resources.get::<Draw>().unwrap();
             let sheets = self.resources.get::<Sheets>().unwrap();
 
-            let mut query = <(&SpriteSheet, &DynamicBody, &Velocity)>::query();
-            for (sheet, body, velocity) in query.iter(&mut self.world)
+            let mut sprite_query = <(&SpriteSheet, &DynamicBody, &Velocity)>::query();
+            for (sheet, body, velocity) in sprite_query.iter(&self.world)
             {
 
                 let rect = sheet.get_src(&draw, sheet.get_sheet(&sheets));
@@ -253,6 +266,22 @@ impl State for Snoop
                 window.draw(&sprite);
 
             }
+
+			let cone_stroke = Stroke::new(Color::rgba(255, 255, 255, 0), Color::rgba(255, 255, 255, 50), 0.0);
+			let mut cone_query = <&Cone>::query();
+			for cone in cone_query.iter(&self.world)
+			{
+
+				for triangle in cone.field.iter()
+				{
+
+					let tri = draw.create_triangle(&cone_stroke, &triangle);
+					
+					window.draw(&tri);
+
+				}
+
+			}
 
         }
 
