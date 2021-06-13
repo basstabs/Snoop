@@ -4,6 +4,7 @@ use legion::systems::{Builder, CommandBuffer};
 
 use parametrizer::Parametrizer;
 
+use super::codes::{Activate, ConsumeWatcher, Watcher};
 use super::game::Timestep;
 use super::space::{FLOATING_POINT_ERROR, Rect};
 
@@ -75,6 +76,7 @@ pub struct Kinematic
 {
 
     time: i32,
+    direction: i32,
     x_param: Parametrizer<f32>,
     y_param: Parametrizer<f32>
 
@@ -86,7 +88,7 @@ impl Kinematic
     pub fn new(x_param: Parametrizer<f32>, y_param: Parametrizer<f32>) -> Kinematic
     {
 
-        return Kinematic { time: 0, x_param: x_param, y_param: y_param };
+        return Kinematic { time: 0, x_param: x_param, y_param: y_param, direction: 1 };
 
     }
 
@@ -123,7 +125,7 @@ impl Kinematic
     fn update(&mut self, step: i32) -> (f32, f32)
     {
 
-        self.time += step;
+        self.time += step * self.direction;
 
         let t = self.time as f32 / 1000.0;
 
@@ -131,6 +133,40 @@ impl Kinematic
         let y = self.y_param.evaluate(t);
 
         return (x, y);
+
+    }
+
+    fn reverse(&mut self)
+    {
+
+        self.direction *= -1;
+
+    }
+
+    fn stop(&mut self)
+    {
+
+        if self.time >= 1000
+        {
+
+            self.time = 1000;
+            self.direction = 0;
+
+        }
+        else if self.time <= 0
+        {
+
+            self.time = 0;
+            self.stop();
+
+        }
+
+    }
+
+    fn start(&mut self, direction: i32)
+    {
+
+        self.direction = direction;
 
     }
 
@@ -170,6 +206,20 @@ impl DynamicBody
 
     }
 
+    pub fn width(&self) -> f32
+    {
+
+        return self.body.width;
+
+    }
+
+    pub fn height(&self) -> f32
+    {
+
+        return self.body.height;
+
+    }
+
     pub fn right(&self) -> f32
     {
 
@@ -205,6 +255,43 @@ fn reset_temp_velocity(dynamic: &mut DynamicBody)
 {
 
 	dynamic.temp_velocity = Velocity::new(0.0, 0.0);
+
+}
+
+#[system(for_each)]
+fn kinematic_toggle(kinematic: &mut Kinematic, _activate: &Activate, cmd: &mut CommandBuffer, entity: &Entity)
+{
+
+    if kinematic.time >= 1000
+    {
+
+        kinematic.start(-1);
+
+    }
+    else if kinematic.time <= 0
+    {
+
+        kinematic.start(1);
+
+    }
+
+    cmd.remove_component::<Activate>(*entity);
+
+}
+
+#[system(for_each)]
+fn kinematic_stop(kinematic: &mut Kinematic, _watcher: &Watcher)
+{
+
+    kinematic.stop();
+
+}
+
+#[system(for_each)]
+fn kinematic_consume_stop(kinematic: &mut Kinematic, _watcher: &ConsumeWatcher)
+{
+
+    kinematic.stop();
 
 }
 
@@ -513,10 +600,14 @@ fn resize_success(_success: &RequestSizeChangeSuccess, cmd: &mut CommandBuffer, 
 pub fn schedule_early_systems(schedule: &mut Builder)
 {
 
+    schedule.add_system(kinematic_toggle_system());
+    schedule.add_system(kinematic_stop_system());
+    schedule.add_system(kinematic_consume_stop_system());
+
 	schedule.add_system(reset_temp_velocity_system());
 	schedule.add_system(reset_oneway_system());
 	schedule.add_system(top_collision_system());
-	
+
 }
 
 pub fn schedule_physics_systems(schedule: &mut Builder)

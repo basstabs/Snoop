@@ -4,9 +4,11 @@ pub mod game;
 pub mod input;
 
 //Simulation modules
-pub mod space;
-pub mod physics;
 pub mod alarm;
+pub mod camera;
+pub mod codes;
+pub mod physics;
+pub mod space;
 
 //Render modules
 pub mod sprites;

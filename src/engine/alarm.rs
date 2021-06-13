@@ -1,7 +1,8 @@
 use legion::*;
 use legion::world::SubWorld;
-use legion::systems::{Builder, CommandBuffer};
+use legion::systems::Builder;
 
+use super::codes::Codes;
 use super::space::{Point, Segment, Triangle};
 use super::physics::{DynamicBody, StaticBody, OneWayBody};
 
@@ -11,7 +12,8 @@ pub struct Observer
 	location: Point,
 	offset: Point,
 	upper: Point,
-	lower: Point
+	lower: Point,
+    code: u128
 
 }
 
@@ -22,15 +24,20 @@ pub struct Cone
 
 }
 
-pub struct Suspicious {}
+pub struct Suspicious
+{
+
+    code: u128
+
+}
 
 impl Observer
 {
 
-	pub fn new(location: Point, offset: Point, upper: Point, lower: Point) -> Observer
+	pub fn new(location: Point, offset: Point, upper: Point, lower: Point, code: u128) -> Observer
 	{
 
-		return Observer { location: location + offset, offset: offset, upper: upper, lower: lower };
+		return Observer { location: location + offset, offset: offset, upper: upper, lower: lower, code: code };
 
 	}
 
@@ -46,8 +53,7 @@ impl Observer
 pub struct Walls
 {
 
-	segments: Vec<Segment>,
-	oneway_segments: Vec<Segment>
+	segments: Vec<Segment>
 
 }
 
@@ -57,7 +63,7 @@ impl Walls
 	pub fn new() -> Walls
 	{
 
-		return Walls { segments: Vec::new(), oneway_segments: Vec::new() };
+		return Walls { segments: Vec::new() };
 
 	}
 
@@ -69,7 +75,6 @@ fn update_wall_segments(world: &mut SubWorld, #[resource] walls: &mut Walls)
 {
 
 	walls.segments.clear();
-	walls.oneway_segments.clear();
 
 	let mut static_query = <&StaticBody>::query();
 
@@ -90,7 +95,12 @@ fn update_wall_segments(world: &mut SubWorld, #[resource] walls: &mut Walls)
 	for body in oneway_query.iter(world)
 	{
 
-		walls.oneway_segments.push(Segment::new(Point { x: body.body.x, y: body.body.y }, Point { x: body.body.right(), y: body.body.y }));
+		let rect = &body.body;
+
+		walls.segments.push(Segment::new(Point { x: rect.x, y: rect.y }, Point { x: rect.right(), y: rect.y }));
+		walls.segments.push(Segment::new(Point { x: rect.right(), y: rect.y }, Point { x: rect.right(), y: rect.bottom() }));
+		walls.segments.push(Segment::new(Point { x: rect.right(), y: rect.bottom() }, Point { x: rect.x, y: rect.bottom() }));
+		walls.segments.push(Segment::new(Point { x: rect.x, y: rect.bottom() }, Point { x: rect.x, y: rect.y }));
 
 	}
 
@@ -127,35 +137,6 @@ fn line_of_sight(observer: &mut Observer, cone: &mut Cone, #[resource] walls: &W
 
 	}
 
-	for segment in walls.oneway_segments.iter()
-	{
-
-		if observer.location.y < segment.start.y
-		{
-
-			//We need to cast a ray at both ends of oneway line segments because each oneway body only contributes one segment
-			let ray = Point { x: segment.start.x - observer.location.x, y: segment.start.y - observer.location.y };
-			if bound_check(ray)
-			{
-
-				rays.push(ray);
-
-			}
-
-
-			let ray = Point { x: segment.start.y - observer.location.y, y: segment.end.y - observer.location.y };
-
-			if bound_check(ray)
-			{
-
-				rays.push(ray);
-
-			}
-
-		}
-
-	}	
-
 	//Sort the rays from lower to upper
 	Point::sort_from_angle(&mut rays, observer.lower);
 	
@@ -182,27 +163,6 @@ fn line_of_sight(observer: &mut Observer, cone: &mut Cone, #[resource] walls: &W
 
 			}
 
-		}	
-
-		for segment in walls.oneway_segments.iter()
-		{
-
-			if observer.location.y < segment.start.y
-			{
-
-				let cast_current = segment.raycast(observer.location, rays[i]);
-				let cast_next = segment.raycast(observer.location, rays[i + 1]);
-
-				if cast_current.is_some() && cast_next.is_some() && (shortest_current == 0.0 || cast_current.unwrap() < shortest_current)
-				{
-
-					shortest_current = cast_current.unwrap();
-					shortest_next = cast_next.unwrap();
-
-				}
-
-			}
-
 		}
 
 		cone.field.push(Triangle::new(observer.location, observer.location + rays[i].scale(shortest_current), observer.location + rays[i + 1].scale(shortest_next)));
@@ -214,27 +174,38 @@ fn line_of_sight(observer: &mut Observer, cone: &mut Cone, #[resource] walls: &W
 #[system(for_each)]
 #[read_component(DynamicBody)]
 #[read_component(Suspicious)]
-fn visual_alarm(cone: &Cone, world: &mut SubWorld, cmd: &mut CommandBuffer)
+fn visual_alarm(observer: &Observer, cone: &Cone, world: &mut SubWorld, #[resource] codes: &mut Codes)
 {
 
-	let mut query = <(&DynamicBody, &Suspicious)>::query();
+    if !codes.contains(observer.code)
+    {
 
-	for (body, _) in query.iter(world)
-	{
+	    let mut query = <(&DynamicBody, &Suspicious)>::query();
 
-		for triangle in cone.field.iter()
-		{
+	    for (body, suspicious) in query.iter(world)
+	    {
 
-			if triangle.intersects_rectangle(&body.body)
-			{
+            if Codes::codes_interact(suspicious.code, observer.code)
+            {
 
-				
+		        for triangle in cone.field.iter()
+		        {
 
-			}						
+			        if triangle.intersects_rectangle(&body.body)
+			        {
 
-		}
+                        codes.insert(observer.code);
+                        break;
 
-	}
+			        }						
+
+                }
+            
+		    }
+
+	    }
+
+    }
 
 }
 

@@ -1,0 +1,13 @@
+(
+
+	width: 800,
+	height: 500,
+	collision: 
+	(
+
+		"test",
+		"./assets/data/collision/"
+
+	)
+
+)

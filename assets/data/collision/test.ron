@@ -22,9 +22,9 @@
 			body:
 			(
 
-				x: 0,
+				x: 25,
 				y: 0,
-				width: 800,
+				width: 750,
 				height: 25
 
 			),
@@ -50,9 +50,9 @@
 			body:
 			(
 
-				x: 0,
+				x: 25,
 				y: 475,
-				width: 800,
+				width: 750,
 				height: 25
 
 			),

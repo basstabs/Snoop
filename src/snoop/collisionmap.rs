@@ -26,7 +26,7 @@ struct Platform
     x_param: String,
     y_param: String
 
-}
+} 
 
 #[derive(Deserialize)]
 struct CollisionMap
