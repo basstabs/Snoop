@@ -78,7 +78,8 @@ pub struct Kinematic
     time: i32,
     direction: i32,
     x_param: Parametrizer<f32>,
-    y_param: Parametrizer<f32>
+    y_param: Parametrizer<f32>,
+    pub change: Velocity
 
 }
 
@@ -88,7 +89,7 @@ impl Kinematic
     pub fn new(x_param: Parametrizer<f32>, y_param: Parametrizer<f32>) -> Kinematic
     {
 
-        return Kinematic { time: 0, x_param: x_param, y_param: y_param, direction: 1 };
+        return Kinematic { time: 0, x_param: x_param, y_param: y_param, direction: 1, change: Velocity { x: 0.0, y: 0.0 } };
 
     }
 
@@ -178,7 +179,7 @@ pub struct DynamicBody
     pub body: Rect,
     pub left: bool,
 	pub top_collision: i32,
-	temp_velocity: Velocity //Used to capture velocity added per frame from being moved by a moving platform. Necessary for accurate collisions
+	pub temp_velocity: Velocity //Used to capture velocity added per frame from being moved by a moving platform. Necessary for accurate collisions
 
 }
 
@@ -306,6 +307,7 @@ fn kinematic_static_move(kinematic: &mut Kinematic, static_body: &mut StaticBody
     let new_pos = kinematic.update(time.step);
 
     let velocity = (new_pos.0 - old_x, new_pos.1 - old_y);
+    kinematic.change = Velocity { x: velocity.0, y: velocity.1 };
 
     let mut query = <&mut DynamicBody>::query();
 
@@ -353,6 +355,7 @@ fn kinematic_oneway_move(kinematic: &mut Kinematic, oneway_body: &mut OneWayBody
     let new_pos = kinematic.update(time.step);
 
     let velocity = (new_pos.0 - old_x, new_pos.1 - old_y);
+    kinematic.change = Velocity { x: velocity.0, y: velocity.1 };
 
     let mut query = <(&mut DynamicBody, &InteractsWithOneWay)>::query();
 

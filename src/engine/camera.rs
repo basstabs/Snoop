@@ -63,7 +63,7 @@ fn world_camera(body: &DynamicBody, _target: &Target, entity: &Entity, #[resourc
     else
     {
 
-        camera.x = view.width * 0.5;
+        camera.x = size.width * 0.5;
         camera.lock_x = true;
 
     }

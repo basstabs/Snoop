@@ -1,5 +1,5 @@
 use sfml::SfBox;
-use sfml::graphics::{Color, RenderTarget, RenderWindow, View};
+use sfml::graphics::{Color, RenderTarget, RenderWindow, Transformable, View};
 use sfml::system::Vector2f;
 use sfml::window::Key;
 
@@ -151,54 +151,58 @@ impl Snoop
 
         let outline = Color::rgba(255, 255, 255, 200);
 
-        let mut static_query = <&StaticBody>::query().filter(component::<Kinematic>() | !component::<Kinematic>());
-        for chunk in static_query.iter_chunks(&mut self.world)
+        let fill = Color::rgba(255, 0, 0, 100);
+
+        //Draw static walls
+        let mut static_query = <&StaticBody>::query().filter(!component::<Kinematic>());
+        for body in static_query.iter(&mut self.world)
         {
 
-            let mut fill = Color::rgba(255, 0, 0, 100);
+            let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &body.body);
 
-            if chunk.archetype().layout().component_types().contains(&ComponentTypeId::of::<Kinematic>())
-            {
-
-                fill = Color::rgba(255, 0, 255, 100);
-
-            }
-
-            for body in chunk
-            { 
-
-                let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &body.body);
-
-                window.draw(&rect);
-
-            }
+            window.draw(&rect);
 
         }
 
-        let mut oneway_query = <&OneWayBody>::query().filter(component::<Kinematic>() | !component::<Kinematic>());
-        for chunk in oneway_query.iter_chunks(&mut self.world)
+        //Draw oneway walls
+        let fill = Color::rgba(0, 255, 0, 100);
+        let mut oneway_query = <&OneWayBody>::query().filter(!component::<Kinematic>());
+        for body in oneway_query.iter(&mut self.world)
         {
 
-            let mut fill = Color::rgba(0, 255, 0, 100);
+            let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &body.body);
 
-            if chunk.archetype().layout().component_types().contains(&ComponentTypeId::of::<Kinematic>())
-            {
-
-                fill = Color::rgba(0, 255, 255, 100);
-
-            }
-
-            for body in chunk
-            { 
-
-                let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &body.body);
-
-                window.draw(&rect);
-
-            }
+            window.draw(&rect);
 
         }
 
+        //Draw static platforms
+        let fill = Color::rgba(255, 255, 0, 100);
+        let mut static_platform_query = <(&StaticBody, &Kinematic)>::query();
+        for (body, kinematic) in static_platform_query.iter(&mut self.world)
+        {
+
+            let mut rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &body.body);
+            rect.set_position(Vector2f::new(body.body.x + time * kinematic.change.x, body.body.y + time * kinematic.change.y));
+
+            window.draw(&rect);
+
+        }
+
+        //Draw oneway platforms
+        let fill = Color::rgba(0, 255, 255, 100);
+        let mut oneway_platform_query = <(&OneWayBody, &Kinematic)>::query();
+        for (body, kinematic) in oneway_platform_query.iter(&mut self.world)
+        {
+
+            let mut rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &body.body);
+            rect.set_position(Vector2f::new(body.body.x + time * kinematic.change.x, body.body.y + time * kinematic.change.y));
+
+            window.draw(&rect);
+
+        }
+
+        //Draw dynamic objects
         let mut dynamic_query = <(&DynamicBody, &Velocity)>::query().filter(component::<HasGravity>() | !component::<HasGravity>());
         for chunk in dynamic_query.iter_chunks(&mut self.world)
         {
@@ -215,7 +219,7 @@ impl Snoop
             for (body, velocity) in chunk
             {
 
-                let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &Rect { x: body.x() + time * velocity.x, y: body.y() + time * velocity.y, width: body.body.width, height: body.body.height });
+                let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &Rect { x: body.x() + time * (velocity.x + body.temp_velocity.x), y: body.y() + time * (velocity.y + body.temp_velocity.y), width: body.body.width, height: body.body.height });
                 window.draw(&rect);
 
             }
@@ -284,24 +288,24 @@ impl State for Snoop
                     if body.left
                     {
 
-                        x = body.right() - offset.x + (time * velocity.x);
+                        x = body.right() - offset.x + (time * (velocity.x + body.temp_velocity.x));
 
                     }
                     else
                     {
 
-                        x = body.x() + offset.x + (time * velocity.x);
+                        x = body.x() + offset.x + (time * (velocity.x + body.temp_velocity.x));
 
                     }
 
-                    let y = body.y() + offset.y + time * velocity.y;
+                    let y = body.y() + offset.y + time * (velocity.y + body.temp_velocity.y);
 
                     let sprite = draw.create_sprite(sheet.texture, rect, &Rect { x: x, y: y, width: rect.width, height: rect.height }, body.left);
 
                     if target
                     {
 
-                        let mut center = Vector2f::new(camera.x + time * velocity.x, camera.y + time * velocity.y);
+                        let mut center = Vector2f::new(camera.x + time * (velocity.x + body.temp_velocity.x), camera.y + time * (velocity.y + body.temp_velocity.y));
 
                         if camera.lock_x
                         {
