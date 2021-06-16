@@ -8,6 +8,13 @@
 		"test",
 		"./assets/data/collision/"
 
+	),
+	event:
+	(
+
+		"test",
+		"./assets/data/event/"
+
 	)
 
 )

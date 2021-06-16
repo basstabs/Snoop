@@ -1,11 +1,12 @@
 use legion::*;
 use legion::systems::{Builder, CommandBuffer};
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub struct Codes
 {
 
+    listing: HashMap<String, u128>,
 	active: HashSet<u128>,
     current_code: u128
 
@@ -17,7 +18,7 @@ impl Codes
 	pub fn new() -> Codes
 	{
 
-		return Codes { active: HashSet::new(), current_code: 0 };
+		return Codes { listing: HashMap::new(), active: HashSet::new(), current_code: 0 };
 
 	}
 
@@ -51,7 +52,7 @@ impl Codes
 
 	}
 
-    pub fn get_code(&mut self) -> u128
+    pub fn get_code(&mut self, name: String) -> u128
     {
 
         let code = self.current_code;

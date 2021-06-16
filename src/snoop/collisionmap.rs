@@ -55,7 +55,8 @@ pub fn load_collision(world: &mut World, file: &str, directory: &str)
                 if body.oneway
                 {
 
-                    world.push((
+                    world.push(
+                    (
                            
                            OneWayBody { body: body.body },
 
@@ -65,7 +66,8 @@ pub fn load_collision(world: &mut World, file: &str, directory: &str)
                 else
                 {
 
-                    world.push((
+                    world.push(
+                    (
 
                             StaticBody { body: body.body },
 
@@ -84,7 +86,8 @@ pub fn load_collision(world: &mut World, file: &str, directory: &str)
                 if platform.body.oneway
                 {
 
-                    world.push((
+                    world.push(
+                    (
 
                             OneWayBody { body: platform.body.body },
                             Kinematic::new(x_param, y_param)
@@ -95,7 +98,8 @@ pub fn load_collision(world: &mut World, file: &str, directory: &str)
                 else
                 {
 
-                    world.push((
+                    world.push(
+                    (
 
                             StaticBody { body: platform.body.body },
                             Kinematic::new(x_param, y_param)
@@ -107,6 +111,7 @@ pub fn load_collision(world: &mut World, file: &str, directory: &str)
             }
 
         }
+
         Err(e) => panic!("Unable to parse collision map RON file {} with error {}", file, e) 
 
     }

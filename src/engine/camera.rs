@@ -32,11 +32,17 @@ pub struct Camera
 pub struct Target {}
 
 #[system(for_each)]
-fn world_camera(body: &DynamicBody, _target: &Target, entity: &Entity, #[resource] camera: &mut Camera, #[resource] size: &WorldSize, #[resource] view: &mut ViewSize)
+fn world_camera(body: &DynamicBody, _target: &Target, #[resource] camera: &mut Camera)
 {
 
     camera.x = body.x() + body.width() * 0.5;
     camera.y = body.y() + body.height() * 0.5;
+
+}
+
+#[system]
+fn camera_bound(#[resource] camera: &mut Camera, #[resource] size: &WorldSize, #[resource] view: &mut ViewSize)
+{
 
     camera.lock_x = false;
     camera.lock_y = false;
@@ -108,6 +114,7 @@ pub fn register_camera_resources(resources: &mut Resources, width: f32, height: 
 pub fn schedule_camera_systems(schedule: &mut Builder)
 {  
 
-   schedule.add_system(world_camera_system()); 
+    schedule.add_system(world_camera_system()); 
+    schedule.add_system(camera_bound_system());
 
 }

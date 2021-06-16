@@ -6,14 +6,119 @@ use super::super::engine::physics::{DynamicBody, InteractsWithOneWay, ResetOneWa
 use super::super::engine::space::FLOATING_POINT_ERROR;
 use super::super::engine::sprites::SpriteSheet;
 
+const NUM_COMMANDS: usize = 5;
+
+const PLAYER_LEFT: usize = 0;
+const PLAYER_RIGHT: usize = 1;
+const PLAYER_UP: usize = 2;
+const PLAYER_DOWN: usize = 3;
+const PLAYER_JUMP: usize = 4;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum InputState
+{
+
+    Up,
+    Down,
+    Pressed
+
+}
+
 pub struct InputCommand
 {
 
-    pub left: bool,
-    pub right: bool,
-    pub up: bool,
-    pub down: bool,
-    pub jump: bool
+    pub commands: Vec<InputState>
+
+}
+
+impl InputCommand
+{
+
+    pub fn new() -> InputCommand
+    {
+
+        return InputCommand { commands: vec![InputState::Up; NUM_COMMANDS] };
+
+    }
+
+    pub fn merge(&mut self, old: &InputCommand)
+    {
+
+        for i in 0..self.commands.len()
+        {
+
+            self.commands[i] = InputCommand::merge_states(self.commands[i], old.commands[i]);
+
+        }
+
+    }
+
+    pub fn bool_to_state(down: bool) -> InputState
+    {
+
+        if down
+        {
+
+            return InputState::Down;
+
+        }
+
+        return InputState::Up;
+
+    }
+
+    fn merge_states(state: InputState, old: InputState) -> InputState
+    {
+
+        match (state, old)
+        {
+
+           (InputState::Down, InputState::Up) => return InputState::Pressed,
+           (InputState::Down, InputState::Pressed) => return InputState::Pressed, //Remain pressed until it is polled
+           _ => return state
+        
+        }
+
+    }
+
+    pub fn down(&mut self, index: usize) -> bool
+    {
+
+        if self.commands[index] == InputState::Pressed
+        {
+
+            self.commands[index] = InputState::Down;
+
+            return true;
+
+        }
+
+        return self.commands[index] == InputState::Down;
+
+    }
+
+    pub fn up(&self, index: usize) -> bool
+    {
+
+        return self.commands[index] == InputState::Up;
+
+    }
+
+    pub fn pressed(&mut self, index: usize) -> bool
+    {
+
+        if self.commands[index] == InputState::Pressed
+        {
+
+            self.commands[index] = InputState::Down;
+
+            return true;
+
+        }
+
+        return false;
+
+    }
 
 }
 
@@ -109,7 +214,7 @@ fn player_state_update(player: &mut Player, #[resource] step: &Timestep)
 }
 
 #[system(for_each)]
-fn player_move(player: &mut Player, velocity: &mut Velocity, dynamic: &DynamicBody, #[resource] step: &Timestep, #[resource] input: &InputCommand)
+fn player_move(player: &mut Player, velocity: &mut Velocity, dynamic: &DynamicBody, #[resource] step: &Timestep, #[resource] input: &mut InputCommand)
 {
 
 	if dynamic.top_collision == 0
@@ -119,14 +224,14 @@ fn player_move(player: &mut Player, velocity: &mut Velocity, dynamic: &DynamicBo
 
 		let horizontal_speed = player.horizontal_speed();
 
-    	if input.left
+    	if input.down(PLAYER_LEFT)
     	{
 
         	velocity.x = -horizontal_speed;
 
     	}
 
-    	if input.right
+    	if input.down(PLAYER_RIGHT)
     	{
 
         	velocity.x = horizontal_speed;
@@ -135,7 +240,7 @@ fn player_move(player: &mut Player, velocity: &mut Velocity, dynamic: &DynamicBo
 
     	velocity.x *= step.step as f32 / 1000.0;
 
-		if input.jump && !input.down && player.can_jump()
+		if input.pressed(PLAYER_JUMP) && input.up(PLAYER_DOWN) && player.can_jump()
     	{
 
         	velocity.y = -player.jump_speed;
@@ -147,10 +252,10 @@ fn player_move(player: &mut Player, velocity: &mut Velocity, dynamic: &DynamicBo
 }
 
 #[system(for_each)]
-fn player_oneway(_player: &Player, _interacts: &InteractsWithOneWay, cmd: &mut CommandBuffer, entity: &Entity, #[resource] input: &InputCommand)
+fn player_oneway(_player: &Player, _interacts: &InteractsWithOneWay, cmd: &mut CommandBuffer, entity: &Entity, #[resource] input: &mut InputCommand)
 {
 
-    if input.jump && input.down
+    if input.pressed(PLAYER_JUMP) && input.down(PLAYER_DOWN)
     {
 
 		cmd.remove_component::<InteractsWithOneWay>(*entity);
@@ -161,13 +266,13 @@ fn player_oneway(_player: &Player, _interacts: &InteractsWithOneWay, cmd: &mut C
 }
 
 #[system(for_each)]
-fn player_state(player: &mut Player, dynamic: &DynamicBody, cmd: &mut CommandBuffer, entity: &Entity, #[resource] input: &InputCommand)
+fn player_state(player: &mut Player, dynamic: &DynamicBody, cmd: &mut CommandBuffer, entity: &Entity, #[resource] input: &mut InputCommand)
 {
 
 	if player.state == PlayerState::Normal
 	{
 
-		if input.down && !input.jump && dynamic.top_collision == 0
+		if input.down(PLAYER_DOWN) && input.up(PLAYER_JUMP) && dynamic.top_collision == 0
 		{
 
 			player.change_state(PlayerState::Crouching);
@@ -181,7 +286,7 @@ fn player_state(player: &mut Player, dynamic: &DynamicBody, cmd: &mut CommandBuf
 	if player.state == PlayerState::Crouching
 	{
 
-		if input.up || input.jump || dynamic.top_collision > 0
+		if input.down(PLAYER_UP) || input.down(PLAYER_JUMP) || dynamic.top_collision > 0
 		{
 
 			player.change_state(PlayerState::Normal);

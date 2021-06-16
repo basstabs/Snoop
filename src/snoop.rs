@@ -32,6 +32,7 @@ use super::engine::space::{Point, Rect};
 
 mod level;
 mod collisionmap;
+mod eventmap;
 mod player;
 
 use player::{Player, InputCommand};
@@ -65,6 +66,7 @@ impl Snoop
         resources.insert(Gravity { force: 20.0 * timestep, max: 1000.0 * timestep});
 		resources.insert(Walls::new());
         resources.insert(Codes::new());
+        resources.insert(InputCommand::new());
 
         camera::register_camera_resources(&mut resources, 400.0, 400.0);
 
@@ -241,10 +243,31 @@ impl State for Snoop
     fn handle_input(&mut self, input: &Input)
     {
 
+        let mut command = InputCommand 
+        { 
+
+            commands: vec!
+            [
+
+                InputCommand::bool_to_state(input.contains(Key::A)), 
+                InputCommand::bool_to_state(input.contains(Key::D)), 
+                InputCommand::bool_to_state(input.contains(Key::W)), 
+                InputCommand::bool_to_state(input.contains(Key::S)), 
+                InputCommand::bool_to_state(input.contains(Key::SPACE))
+
+            ]
+
+        };
+
+        //Subscope so that immutable borrow does not conflict with mutable borrow
+        {
+
+            let old_command = self.resources.get::<InputCommand>().unwrap();
+            command.merge(&old_command);
+
+        }
+
         self.resources.remove::<InputCommand>();
-
-        let command = InputCommand { left: input.contains(Key::A), right: input.contains(Key::D), up: input.contains(Key::W), down: input.contains(Key::S), jump: input.contains(Key::SPACE) }; 
-
         self.resources.insert(command);
 
     }
