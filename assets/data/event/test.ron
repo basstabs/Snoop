@@ -1,2 +1,24 @@
 (
+
+	triggers:
+	[
+
+		(
+
+			code: "elevator",
+			rect: 
+			(
+
+				x: 600,
+				y: 400,
+				width: 50,
+				height: 50
+
+			),
+			count: 2
+	
+		)
+
+	]
+
 )

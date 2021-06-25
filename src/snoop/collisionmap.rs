@@ -6,6 +6,7 @@ use legion::*;
 
 use std::fs::File;
 
+use super::super::engine::codes::{Codes, ConsumeWatcher, Watcher, WatcherData};
 use super::super::engine::space::Rect;
 use super::super::engine::physics::{Kinematic, OneWayBody, StaticBody};
 
@@ -24,7 +25,9 @@ struct Platform
 
     body: Body,
     x_param: String,
-    y_param: String
+    y_param: String,
+    max: i32,
+    watcher: Option<WatcherData>
 
 } 
 
@@ -37,7 +40,7 @@ struct CollisionMap
 
 }
 
-pub fn load_collision(world: &mut World, file: &str, directory: &str)
+pub fn load_collision(world: &mut World, codes: &mut Codes, file: &str, directory: &str)
 {
 
     let f = File::open(&format!("{}{}.ron", directory, file)).expect(&format!("Unable to open collision map file {}", file));
@@ -83,28 +86,37 @@ pub fn load_collision(world: &mut World, file: &str, directory: &str)
                 let x_param = Parametrizer::new(&platform.x_param).unwrap();
                 let y_param = Parametrizer::new(&platform.y_param).unwrap();
 
+                let entity: Entity = world.push((Kinematic::new(x_param, y_param, platform.max), ));
+                let mut entry = world.entry(entity).unwrap();
+
                 if platform.body.oneway
                 {
 
-                    world.push(
-                    (
-
-                            OneWayBody { body: platform.body.body },
-                            Kinematic::new(x_param, y_param)
-
-                    ));
+                    entry.add_component(OneWayBody { body: platform.body.body });
 
                 }
                 else
                 {
 
-                    world.push(
-                    (
+                    entry.add_component(StaticBody { body: platform.body.body });
 
-                            StaticBody { body: platform.body.body },
-                            Kinematic::new(x_param, y_param)
+                }
 
-                    ));
+                if let Some(data) = platform.watcher
+                {
+
+                    if data.consume
+                    {
+
+                        entry.add_component(ConsumeWatcher { code: codes.get_code(data.code) });
+
+                    }
+                    else
+                    {
+
+                        entry.add_component(Watcher { code: codes.get_code(data.code), activated: false });
+
+                    }
 
                 }
 

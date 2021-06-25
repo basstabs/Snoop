@@ -6,24 +6,37 @@ use legion::systems::Builder;
 
 use std::fs::File;
 
+use super::super::engine::space::Rect;
+use super::super::engine::codes::Codes;
+
+pub struct Trigger
+{
+
+    pub code: u128,
+    pub rect: Rect,
+    pub count: i32
+    
+}
+
 #[derive(Deserialize)]
 struct EventMap
 {
+
+    triggers: Vec<TriggerData>
+
 }
 
-struct Trigger
+#[derive(Deserialize)]
+struct TriggerData
 {
 
-    code: u128,
-    
+    code: String,
+    rect: Rect,
+    count: i32
 
 }
 
-pub fn schedule_event_systems(schedule: &mut Builder)
-{
-}
-
-pub fn load_events(world: &mut World, file: &str, directory: &str)
+pub fn load_events(world: &mut World, codes: &mut Codes, file: &str, directory: &str)
 {
 
     let f = File::open(&format!("{}{}.ron", directory, file)).expect(&format!("Unable to open event map file {}", file));
@@ -35,7 +48,17 @@ pub fn load_events(world: &mut World, file: &str, directory: &str)
         Ok(e) =>
         {
 
+            for trigger in e.triggers
+            {
 
+                world.push(
+                (
+
+                    Trigger { code: codes.get_code(trigger.code), rect: trigger.rect, count: trigger.count },
+
+                ));
+
+            }
 
         }
         Err(e) => panic!("Unable to parse event map RON file {} with error {}", file, e) 

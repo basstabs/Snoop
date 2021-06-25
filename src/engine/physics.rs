@@ -76,6 +76,7 @@ pub struct Kinematic
 {
 
     time: i32,
+    max: i32,
     direction: i32,
     x_param: Parametrizer<f32>,
     y_param: Parametrizer<f32>,
@@ -86,10 +87,10 @@ pub struct Kinematic
 impl Kinematic
 {
 
-    pub fn new(x_param: Parametrizer<f32>, y_param: Parametrizer<f32>) -> Kinematic
+    pub fn new(x_param: Parametrizer<f32>, y_param: Parametrizer<f32>, max: i32) -> Kinematic
     {
 
-        return Kinematic { time: 0, x_param: x_param, y_param: y_param, direction: 1, change: Velocity { x: 0.0, y: 0.0 } };
+        return Kinematic { time: 0, max: max, x_param: x_param, y_param: y_param, direction: 1, change: Velocity { x: 0.0, y: 0.0 } };
 
     }
 
@@ -147,10 +148,10 @@ impl Kinematic
     fn stop(&mut self)
     {
 
-        if self.time >= 1000
+        if self.time >= self.max
         {
 
-            self.time = 1000;
+            self.time = self.max;
             self.direction = 0;
 
         }
@@ -158,7 +159,7 @@ impl Kinematic
         {
 
             self.time = 0;
-            self.stop();
+            self.direction = 0;
 
         }
 
@@ -263,7 +264,7 @@ fn reset_temp_velocity(dynamic: &mut DynamicBody)
 fn kinematic_toggle(kinematic: &mut Kinematic, _activate: &Activate, cmd: &mut CommandBuffer, entity: &Entity)
 {
 
-    if kinematic.time >= 1000
+    if kinematic.time >= kinematic.max
     {
 
         kinematic.start(-1);
@@ -281,18 +282,29 @@ fn kinematic_toggle(kinematic: &mut Kinematic, _activate: &Activate, cmd: &mut C
 }
 
 #[system(for_each)]
-fn kinematic_stop(kinematic: &mut Kinematic, _watcher: &Watcher)
+fn kinematic_stop(kinematic: &mut Kinematic, watcher: &Watcher)
 {
 
-    kinematic.stop();
+    if !watcher.activated
+    {
+
+        kinematic.stop();
+
+    }
 
 }
 
 #[system(for_each)]
+#[filter(!component::<Activate>())]
 fn kinematic_consume_stop(kinematic: &mut Kinematic, _watcher: &ConsumeWatcher)
 {
 
-    kinematic.stop();
+    if kinematic.time <= 0 || kinematic.time >= kinematic.max
+    {
+
+        kinematic.stop();
+
+    }
 
 }
 

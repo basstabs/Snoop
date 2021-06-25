@@ -6,6 +6,7 @@ use legion::*;
 use std::fs::File;
 
 use super::super::engine::camera::WorldSize;
+use super::super::engine::codes::Codes;
 
 use super::collisionmap;
 use super::eventmap;
@@ -34,9 +35,10 @@ pub fn load_level(world: &mut World, resources: &mut Resources, file: &str, dire
         {
 
             resources.insert(WorldSize { width: l.width, height: l.height });
-            
-            collisionmap::load_collision(world, &l.collision.0, &l.collision.1);
-            eventmap::load_events(world, &l.event.0, &l.event.1);
+
+            let mut codes = resources.get_mut::<Codes>().unwrap();           
+            collisionmap::load_collision(world, &mut codes, &l.collision.0, &l.collision.1);
+            eventmap::load_events(world, &mut codes, &l.event.0, &l.event.1);
 
         }
         Err(e) => panic!("Unable to parse level RON file {} with error {}", file, e) 

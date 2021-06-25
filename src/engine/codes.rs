@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 use legion::*;
 use legion::systems::{Builder, CommandBuffer};
 
@@ -55,11 +57,25 @@ impl Codes
     pub fn get_code(&mut self, name: String) -> u128
     {
 
-        let code = self.current_code;
+        let entry = self.listing.get(&name);
+        
+        match entry
+        {
 
-        self.current_code += 1;
+            Some(c) => return *c,
+            None => 
+            {
 
-        return code;
+                let code = self.current_code;
+                self.listing.insert(name, code);
+
+                self.current_code += 1;
+
+                return code;
+
+            }
+
+        }
 
     }
 
@@ -75,15 +91,24 @@ impl Codes
 pub struct Watcher
 {
 
-    code: u128,
-    activated: bool
+    pub code: u128,
+    pub activated: bool
 
 }
 
 pub struct ConsumeWatcher
 {
 
-    code: u128
+    pub code: u128
+
+}
+
+#[derive(Deserialize)]
+pub struct WatcherData
+{
+
+    pub code: String,
+    pub consume: bool
 
 }
 

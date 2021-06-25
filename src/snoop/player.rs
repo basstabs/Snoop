@@ -1,18 +1,23 @@
 use legion::*;
+use legion::world::SubWorld;
 use legion::systems::{Builder, CommandBuffer};
 
+use super::super::engine::codes::Codes;
 use super::super::engine::game::Timestep;
 use super::super::engine::physics::{DynamicBody, InteractsWithOneWay, ResetOneWayInteraction, RequestSizeChange, RequestSizeChangeSuccess, RequestSizeChangeFailure, Velocity};
-use super::super::engine::space::FLOATING_POINT_ERROR;
+use super::super::engine::space::{FLOATING_POINT_ERROR, Rect};
 use super::super::engine::sprites::SpriteSheet;
 
-const NUM_COMMANDS: usize = 5;
+use super::eventmap::Trigger;
+
+const NUM_COMMANDS: usize = 6;
 
 const PLAYER_LEFT: usize = 0;
 const PLAYER_RIGHT: usize = 1;
 const PLAYER_UP: usize = 2;
 const PLAYER_DOWN: usize = 3;
 const PLAYER_JUMP: usize = 4;
+const PLAYER_INTERACT: usize = 5;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum InputState
@@ -266,6 +271,35 @@ fn player_oneway(_player: &Player, _interacts: &InteractsWithOneWay, cmd: &mut C
 }
 
 #[system(for_each)]
+#[write_component(Trigger)]
+fn player_trigger(_player: &Player, dynamic: &DynamicBody, world: &mut SubWorld, cmd: &mut CommandBuffer,#[resource] input: &mut InputCommand, #[resource] codes: &mut Codes)
+{
+
+    let mut trigger_query  = <(&mut Trigger, Entity)>::query();
+
+    for (trigger, entity) in trigger_query.iter_mut(world)
+    {
+
+        if input.pressed(PLAYER_INTERACT) && Rect::intersects(&dynamic.body, &trigger.rect)
+        {
+
+            codes.insert(trigger.code);
+            trigger.count -= 1;
+
+            if trigger.count == 0
+            {
+
+                cmd.remove(*entity);
+
+            }
+
+        }
+
+    }
+
+}
+
+#[system(for_each)]
 fn player_state(player: &mut Player, dynamic: &DynamicBody, cmd: &mut CommandBuffer, entity: &Entity, #[resource] input: &mut InputCommand)
 {
 
@@ -368,7 +402,8 @@ pub fn schedule_early_systems(schedule: &mut Builder)
 	schedule.add_system(player_state_update_system());
 	schedule.add_system(player_move_system());
 	schedule.add_system(player_oneway_system());
-	schedule.add_system(player_state_system());
+    schedule.add_system(player_trigger_system());
+    schedule.add_system(player_state_system());
 		
 }
 

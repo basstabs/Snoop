@@ -36,6 +36,7 @@ mod eventmap;
 mod player;
 
 use player::{Player, InputCommand};
+use eventmap::Trigger;
 
 pub struct Snoop
 {
@@ -228,6 +229,17 @@ impl Snoop
 
         }
 
+        //Draw triggers
+        let mut trigger_query = <&Trigger>::query();
+        for trigger in trigger_query.iter(&mut self.world)
+        {
+
+            let fill = Color::rgba(255, 128, 255, 100);
+            let rect = draw.create_rect(&Stroke::new(outline, fill, 1.0), &trigger.rect);
+            window.draw(&rect);
+
+        }
+
     }
 
 }
@@ -253,7 +265,8 @@ impl State for Snoop
                 InputCommand::bool_to_state(input.contains(Key::D)), 
                 InputCommand::bool_to_state(input.contains(Key::W)), 
                 InputCommand::bool_to_state(input.contains(Key::S)), 
-                InputCommand::bool_to_state(input.contains(Key::SPACE))
+                InputCommand::bool_to_state(input.contains(Key::SPACE)),
+                InputCommand::bool_to_state(input.contains(Key::ENTER))
 
             ]
 
