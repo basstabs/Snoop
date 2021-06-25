@@ -6,8 +6,8 @@ use legion::systems::Builder;
 
 use std::fs::File;
 
-use super::super::engine::space::Rect;
-use super::super::engine::codes::Codes;
+use engine::space::Rect;
+use engine::codes::Codes;
 
 pub struct Trigger
 {
@@ -54,7 +54,7 @@ pub fn load_events(world: &mut World, codes: &mut Codes, file: &str, directory: 
                 world.push(
                 (
 
-                    Trigger { code: codes.get_code(trigger.code), rect: trigger.rect, count: trigger.count },
+                    Trigger { code: codes.get_code(&trigger.code), rect: trigger.rect, count: trigger.count },
 
                 ));
 

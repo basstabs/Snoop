@@ -2,11 +2,11 @@ use legion::*;
 use legion::world::SubWorld;
 use legion::systems::{Builder, CommandBuffer};
 
-use super::super::engine::codes::Codes;
-use super::super::engine::game::Timestep;
-use super::super::engine::physics::{DynamicBody, InteractsWithOneWay, ResetOneWayInteraction, RequestSizeChange, RequestSizeChangeSuccess, RequestSizeChangeFailure, Velocity};
-use super::super::engine::space::{FLOATING_POINT_ERROR, Rect};
-use super::super::engine::sprites::SpriteSheet;
+use engine::codes::Codes;
+use engine::game::Timestep;
+use engine::physics::{DynamicBody, InteractsWithOneWay, ResetOneWayInteraction, RequestSizeChange, RequestSizeChangeSuccess, RequestSizeChangeFailure, Velocity};
+use engine::space::{FLOATING_POINT_ERROR, Rect};
+use engine::sprites::SpriteSheet;
 
 use super::eventmap::Trigger;
 

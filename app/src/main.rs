@@ -1,12 +1,9 @@
 use sfml::graphics::RenderWindow;
 use sfml::window::Style;
 
-mod engine;
-
 use engine::game::Game;
 
 mod snoop;
-
 use snoop::Snoop;
 
 fn main()

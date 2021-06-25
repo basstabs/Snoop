@@ -5,8 +5,8 @@ use legion::*;
 
 use std::fs::File;
 
-use super::super::engine::camera::WorldSize;
-use super::super::engine::codes::Codes;
+use engine::camera::WorldSize;
+use engine::codes::Codes;
 
 use super::collisionmap;
 use super::eventmap;

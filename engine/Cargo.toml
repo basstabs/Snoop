@@ -1,30 +1,14 @@
 [package]
-name = "snoop"
+name = "engine"
 version = "0.1.0"
 authors = ["basstabs <babsstabs@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[[bin]]
-name = "app"
-path = "app/src/main.rs"
-
-[workspace]
-members = [
-
-	"engine",
-	"game",
-	"app",
-	"creator"
-
-]
-
 [dependencies]
+legion = "0.4"
+sfml = "0.16"
 serde = "1.0"
 ron = "0.6.4"
-legion = "0.4.0"
-sfml = 	"0.16.0"
 parametrizer = "1.2.0"
-engine = { path = "engine/" }
-game = { path = "game/" }

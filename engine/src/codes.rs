@@ -54,10 +54,10 @@ impl Codes
 
 	}
 
-    pub fn get_code(&mut self, name: String) -> u128
+    pub fn get_code(&mut self, name: &str) -> u128
     {
 
-        let entry = self.listing.get(&name);
+        let entry = self.listing.get(name);
         
         match entry
         {
@@ -67,7 +67,7 @@ impl Codes
             {
 
                 let code = self.current_code;
-                self.listing.insert(name, code);
+                self.listing.insert(name.to_string(), code);
 
                 self.current_code += 1;
 

@@ -6,9 +6,9 @@ use legion::*;
 
 use std::fs::File;
 
-use super::super::engine::codes::{Codes, ConsumeWatcher, Watcher, WatcherData};
-use super::super::engine::space::Rect;
-use super::super::engine::physics::{Kinematic, OneWayBody, StaticBody};
+use engine::codes::{Codes, ConsumeWatcher, Watcher, WatcherData};
+use engine::space::Rect;
+use engine::physics::{Kinematic, OneWayBody, StaticBody};
 
 #[derive(Deserialize)]
 struct Body
@@ -27,7 +27,7 @@ struct Platform
     x_param: String,
     y_param: String,
     max: i32,
-    watcher: Option<WatcherData>
+    watchers: Vec<WatcherData>
 
 } 
 
@@ -102,19 +102,19 @@ pub fn load_collision(world: &mut World, codes: &mut Codes, file: &str, director
 
                 }
 
-                if let Some(data) = platform.watcher
+                for data in platform.watchers.iter()
                 {
 
                     if data.consume
                     {
 
-                        entry.add_component(ConsumeWatcher { code: codes.get_code(data.code) });
+                        entry.add_component(ConsumeWatcher { code: codes.get_code(&data.code) });
 
                     }
                     else
                     {
 
-                        entry.add_component(Watcher { code: codes.get_code(data.code), activated: false });
+                        entry.add_component(Watcher { code: codes.get_code(&data.code), activated: false });
 
                     }
 

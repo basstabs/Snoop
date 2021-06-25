@@ -110,15 +110,25 @@
 
 			),
 			max: 2000,
-			x_param: "p[4]400+50*t>0|500-50*(t-2)>2",
+			x_param: "p[4]400+50*t>0|500>2",
 			y_param: "300",
-			watcher: Some(
-			(
+			watchers:
+			[
 
-				code: "elevator",
-				consume: true
+				(
 
-			))
+					code: "camera",
+					consume: false
+
+				),
+				(
+
+					code: "elevator",
+					consume: true
+
+				)
+
+			]
 
 		),
 		(
@@ -141,13 +151,17 @@
 			x_param: "p[6]250+100*t>0|450-50*(t-2)>2|350-50*(t-4)>4",
 			y_param: "p[6]250>0|250-50*(t-2)>2|150+50*(t-4)>4",
 			max: 1,
-			watcher: Some(
-			(
+			watchers: 
+			[
 
-				code: "elevator",
-				consume: false
+				(
 
-			))
+					code: "elevator",
+					consume: false
+
+				)
+
+			]
 
 		)
 

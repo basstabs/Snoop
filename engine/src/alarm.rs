@@ -27,7 +27,7 @@ pub struct Cone
 pub struct Suspicious
 {
 
-    code: u128
+    pub code: u128
 
 }
 

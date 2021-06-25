@@ -7,36 +7,35 @@ use legion::*;
 use legion::systems::Builder;
 use legion::storage::ComponentTypeId;
 
-use super::engine::alarm;
-use alarm::{Cone, Observer, Walls};
+use engine::alarm;
+use alarm::{Cone, Observer, Suspicious, Walls};
 
-use super::engine::camera;
+use engine::camera;
 use camera::{Camera, Target};
 
-use super::engine::codes;
+use engine::codes;
 use codes::{Codes};
 
-use super::engine::game::{State, Timestep};
+use engine::game::{State, Timestep};
 
-use super::engine::draw::{Draw, Stroke};
+use engine::draw::{Draw, Stroke};
 
-use super::engine::input::Input;
+use engine::input::Input;
 
-use super::engine::physics;
+use engine::physics;
 use physics::{DynamicBody, Gravity, HasGravity, InteractsWithOneWay, Kinematic, OneWayBody, StaticBody, Velocity};
 
-use super::engine::sprites;
+use engine::sprites;
 use sprites::{Sheets, SpriteSheet};
 
-use super::engine::space::{Point, Rect};
+use engine::space::{Point, Rect};
 
-mod level;
-mod collisionmap;
-mod eventmap;
-mod player;
+use game::player;
+use game::player::{Player, InputCommand};
 
-use player::{Player, InputCommand};
-use eventmap::Trigger;
+use game::level;
+
+use game::eventmap::Trigger;
 
 pub struct Snoop
 {
@@ -80,17 +79,23 @@ impl Snoop
             InteractsWithOneWay {},
             Velocity::new(0.0, 0.0),
             DynamicBody::new(50.0, 50.0, 15.0, 50.0),
-            Target {}
+            Target {},
+            Suspicious { code: 0 }
 
         ));
 
+        {
+
+        let mut codes = resources.get_mut::<Codes>().unwrap();           
 		world.push(
 		(
 
-			Observer::new(Point { x: 600.0, y: 200.0 }, Point { x: 0.0, y: 0.0 }, Point { x: -3.0, y: 1.0 }, Point { x: -1.0, y: 1.0 } , 1),
+			Observer::new(Point { x: 600.0, y: 200.0 }, Point { x: 0.0, y: 0.0 }, Point { x: -3.0, y: 1.0 }, Point { x: -1.0, y: 1.0 } , codes.get_code("camera")),
 			Cone { field: Vec::new() }
 
 		));
+
+        }
 
         level::load_level(&mut world, &mut resources, "test", "./assets/data/levels/");
 
